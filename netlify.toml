@@ -5,11 +5,12 @@
   base = "client"
   # Command to build the Vite React application
   command = "npm run build"
-  # Directory that contains the built static files
-  publish = "dist"
+  # Directory that contains the built static files (relative to repository root in netlify.toml)
+  publish = "client/dist"
 
 [build.environment]
   NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
 
 # SPA routing redirect rule: routes all URLs to index.html with a 200 status
 [[redirects]]
