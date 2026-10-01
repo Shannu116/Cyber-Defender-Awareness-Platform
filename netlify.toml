@@ -1,0 +1,18 @@
+# Netlify Configuration for Cyber Defender
+
+[build]
+  # Base directory where client package.json is located
+  base = "client"
+  # Command to build the Vite React application
+  command = "npm run build"
+  # Directory that contains the built static files
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA routing redirect rule: routes all URLs to index.html with a 200 status
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -1,7 +1,9 @@
 import { Question, QuizAttempt, AdminStats, QuestionCategory } from '../types';
 import { fallbackQuestions } from '../data/fallbackQuestions';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${(import.meta.env.VITE_API_URL as string).replace(/\/$/, '')}/api`
+  : '/api';
 const TOKEN_KEY = 'cyber_defender_admin_token';
 
 // --- Admin Authentication Token Management ---

@@ -25,7 +25,7 @@ export const MissionBriefing: React.FC<MissionBriefingProps> = ({
   onBack
 }) => {
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="max-w-3xl w-full mx-auto">
         {/* Mission Briefing Card */}
         <div className="relative rounded-2xl bg-slate-900/90 border border-slate-800 p-6 sm:p-10 shadow-2xl overflow-hidden">
@@ -37,7 +37,7 @@ export const MissionBriefing: React.FC<MissionBriefingProps> = ({
             <div>
               <span className="text-xs font-mono uppercase text-cyan-400 font-semibold tracking-wider flex items-center gap-1.5 mb-1">
                 <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-                Security Protocol Initialized
+                Microcare Security Awareness Campaign
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                 Mission Briefing

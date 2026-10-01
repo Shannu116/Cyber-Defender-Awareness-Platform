@@ -576,10 +576,10 @@ export function App() {
       </main>
 
       {/* Persistent Global Footer */}
-      <footer className="w-full border-t border-slate-900 bg-slate-950/80 px-4 py-4 text-center text-xs text-slate-400 font-mono">
+      <footer className="w-full border-t border-slate-800 bg-slate-950/80 px-4 py-4 text-center text-xs text-slate-400 font-mono">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-cyan-400 font-bold">CYBER DEFENDER</span>
+            <span className="text-cyan-400 font-bold">Cyber Aware 2026</span>
             <span>• Employee Security Awareness Simulation</span>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-slate-400">

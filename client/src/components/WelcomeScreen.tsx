@@ -49,12 +49,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         {/* Main Title & Slogan */}
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-3">
           <span className="bg-gradient-to-r from-white via-cyan-100 to-cyan-400 bg-clip-text text-transparent">
-            CYBER DEFENDER
+            Cyber Aware 2026
           </span>
         </h1>
 
         <div className="text-xl sm:text-2xl font-bold text-cyan-300 font-mono tracking-wider uppercase mb-4">
-          “Think before you click.”
+          “You are the Firewall”
         </div>
 
         <p className="text-base sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed mb-8">
@@ -174,7 +174,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           </div>
           <div className="flex items-center gap-1.5">
             <Database className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Real MongoDB persistence</span>
+            <span>Enterprise Database Storage</span>
           </div>
         </div>
       </div>

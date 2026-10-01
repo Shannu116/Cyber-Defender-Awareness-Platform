@@ -58,7 +58,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8">
+    <div className="min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
       {/* Results Header Card */}
       <div className="relative rounded-3xl bg-slate-900/90 border border-slate-800 p-6 sm:p-10 shadow-2xl overflow-hidden text-center">
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-500 via-purple-500 to-emerald-500" />
@@ -70,7 +70,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         </div>
 
         <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight mb-2">
-          YOUR CYBER DEFENDER RESULTS
+          YOUR CYBER AWARE 2026 RESULTS
         </h1>
         <p className="text-xs sm:text-sm text-slate-400 font-mono mb-8">
           Participant: <strong className="text-slate-200">{attempt.participantName}</strong> • Department: <strong className="text-slate-200">{attempt.department}</strong>

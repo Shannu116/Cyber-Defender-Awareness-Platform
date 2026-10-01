@@ -36,25 +36,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80 px-4 lg:px-8 py-3 transition-all">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        {/* Logo and Brand */}
+        {/* Microcare Logo and Brand in Top Left Corner */}
         <div 
           onClick={onNavigateHome}
           className="flex items-center gap-3 cursor-pointer group select-none"
         >
-          <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 p-0.5 shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-all duration-300">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <Shield className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform duration-200" />
-            </div>
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
+          <div className="flex items-center bg-white px-2.5 py-1.5 rounded-xl shadow-md border border-slate-200/90 group-hover:scale-105 transition-transform duration-200">
+            <img 
+              src="/microcare-logo.jpg" 
+              alt="Microcare" 
+              className="h-6 sm:h-7 object-contain" 
+            />
           </div>
+
+          <div className="h-6 w-px bg-slate-800 hidden sm:block" />
 
           <div>
             <div className="flex items-center gap-2">
               <span className="font-black tracking-wider text-base lg:text-lg bg-gradient-to-r from-white via-cyan-100 to-cyan-400 bg-clip-text text-transparent">
-                CYBER DEFENDER
+                Cyber Aware 2026
               </span>
               {isPracticeMode && (
                 <span className="px-2 py-0.5 text-xs font-semibold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-full">
@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
             <p className="text-[11px] text-slate-400 font-mono tracking-tight hidden sm:block">
-              Corporate Awareness Platform
+              Corporate Awareness Campaign
             </p>
           </div>
         </div>
