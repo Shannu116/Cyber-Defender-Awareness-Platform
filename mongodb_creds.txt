@@ -1,0 +1,9 @@
+username: shanmukhaperla_db_user
+
+password: Mc0uR6CRuDMsv56T
+
+
+mongodb cloud username and password
+
+
+mongodb+srv://<db_username>:<db_password>@cluster-microcare.gepmhm7.mongodb.net/?appName=Cluster-microcare

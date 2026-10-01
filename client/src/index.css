@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-100 font-sans min-h-screen antialiased selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden transition-colors duration-200;
+  }
+}
+
+/* -------------------------------------------------------------
+   LIGHT MODE THEME OVERRIDES
+   Dynamically inverts neutral palettes and tunes cyber accents
+   for crisp, high-contrast readability in daylight conditions.
+------------------------------------------------------------- */
+html.light,
+[data-theme="light"],
+body.light {
+  color-scheme: light;
+
+  /* Neutrals: Invert Slate Palette */
+  --color-slate-950: #f8fafc; /* Main Canvas Background (slate-50) */
+  --color-slate-900: #ffffff; /* Card / Panel Surfaces (Pure White) */
+  --color-slate-850: #f1f5f9; /* Inset Container / Mockup background (slate-100) */
+  --color-slate-800: #e2e8f0; /* Primary Card Borders / Dividers (slate-200) */
+  --color-slate-700: #cbd5e1; /* Secondary Borders / Pill Outlines (slate-300) */
+  --color-slate-600: #94a3b8; /* Muted Borders / Inactive Controls (slate-400) */
+  --color-slate-500: #64748b; /* Secondary Details / Captions (slate-500) */
+  --color-slate-400: #475569; /* Secondary Body Text (slate-600) */
+  --color-slate-300: #334155; /* Primary Body Text (slate-700) */
+  --color-slate-200: #1e293b; /* Emphasized Text / Subheadings (slate-800) */
+  --color-slate-100: #0f172a; /* Deep Contrast Headings (slate-900) */
+  --color-slate-50:  #020617; /* Inverted extreme */
+
+  /* Cyber Cyan / Sky Accents */
+  --color-cyan-950: #e0f2fe;   /* Soft sky-100 banner background */
+  --color-cyan-900: #bae6fd;   /* sky-200 */
+  --color-cyan-800: #7dd3fc;
+  --color-cyan-700: #38bdf8;
+  --color-cyan-600: #0284c7;
+  --color-cyan-500: #0284c7;
+  --color-cyan-400: #0369a1;   /* High-contrast sky-700 text & icons */
+  --color-cyan-300: #075985;   /* High-contrast sky-800 text */
+  --color-cyan-200: #0c4a6e;   /* sky-900 text */
+  --color-cyan-100: #082f49;
+
+  /* Emerald (Success & Safe Indicators) */
+  --color-emerald-950: #dcfce7; /* Soft green-100 tint */
+  --color-emerald-900: #bbf7d0;
+  --color-emerald-400: #15803d; /* High-contrast green-700 text */
+  --color-emerald-300: #166534; /* High-contrast green-800 text */
+
+  /* Amber (Warning & Hazard Indicators) */
+  --color-amber-950: #fef3c7;  /* Soft amber-100 tint */
+  --color-amber-900: #fde68a;
+  --color-amber-400: #b45309;  /* High-contrast amber-700 text */
+  --color-amber-300: #92400e;  /* High-contrast amber-800 text */
+
+  /* Rose / Red (Phish & Attack Red Flags) */
+  --color-rose-950: #ffe4e6;   /* Soft rose-100 tint */
+  --color-rose-900: #fecdd3;
+  --color-rose-400: #be123c;   /* High-contrast rose-700 text */
+  --color-rose-300: #9f1239;   /* High-contrast rose-800 text */
+
+  /* Purple / Indigo */
+  --color-purple-950: #f3e8ff;
+  --color-purple-400: #7e22ce;
+  --color-blue-950: #dbeafe;
+  --color-blue-400: #1d4ed8;
+}
+
+/* Light mode heading & typography contrast */
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6 {
+  color: #0f172a;
+}
+
+/* Ensure text-white on light card backgrounds becomes deep slate,
+   while preserving bright white on colored/gradient CTA buttons */
+html.light .text-white:not(
+  button *, 
+  [class*="bg-gradient-"], 
+  [class*="bg-cyan-500"], 
+  [class*="bg-blue-600"], 
+  [class*="bg-emerald-600"], 
+  [class*="bg-rose-600"], 
+  [class*="bg-indigo-600"],
+  [class*="bg-purple-600"],
+  button
+) {
+  color: #0f172a;
+}
+
+/* Form inputs & controls in light mode */
+html.light input,
+html.light select,
+html.light textarea {
+  color: #0f172a;
+}
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Brand headline gradient adapt to light theme */
+html.light .bg-gradient-to-r.from-white {
+  background-image: linear-gradient(to right, #0f172a, #0369a1, #0284c7) !important;
+}
+
+/* Light mode cyber grid pattern */
+html.light .cyber-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+}
+
+/* Light mode custom scrollbars */
+html.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Dark mode custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Subtle glowing cyber utilities */
+.glow-cyan {
+  box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.25);
+}
+
+.glow-purple {
+  box-shadow: 0 0 25px -5px rgba(168, 85, 247, 0.25);
+}
+
+.glow-blue {
+  box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.25);
+}
+
+/* Cyber grid background (dark default) */
+.cyber-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
