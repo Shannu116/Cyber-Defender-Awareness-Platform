@@ -38,6 +38,7 @@ export async function connectDB() {
   try {
     console.log(`[MongoDB Atlas] Initializing connection to cloud cluster...`);
     await mongoose.connect(uri, {
+      dbName: 'cyber_defender',
       serverSelectionTimeoutMS: 10000,
     });
     console.log(`[MongoDB Atlas] You successfully connected to MongoDB Cloud!`);
