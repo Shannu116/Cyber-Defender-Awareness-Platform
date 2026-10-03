@@ -34,6 +34,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [duplicateMessage, setDuplicateMessage] = useState<string | null>(null);
+  const [isTestCompleted, setIsTestCompleted] = useState(false);
 
   // Resume modal state
   const [showResumeModal, setShowResumeModal] = useState(false);
@@ -64,6 +65,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     if (e) e.preventDefault();
     setError('');
     setDuplicateMessage(null);
+    setIsTestCompleted(false);
 
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -86,10 +88,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       await onStartMission(trimmedName, department, trimmedEmail || undefined);
     } catch (err: any) {
       if (err.isDuplicate) {
-        setDuplicateMessage(err.message);
-        // Pre-fill resume modal
-        setResumeName(trimmedName);
-        setResumeDept(department);
+        if (err.isCompleted) {
+          // User already finished the test — block retake, show completion notice
+          setIsTestCompleted(true);
+          setDuplicateMessage(err.message);
+        } else {
+          // User has an in-progress session — offer to resume
+          setDuplicateMessage(err.message);
+          setResumeName(trimmedName);
+          setResumeDept(department);
+        }
       } else {
         setError(err.message || 'Failed to start test session. Please try again.');
       }
@@ -211,8 +219,26 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             </span>
           </div>
 
-          {/* Friendly Duplicate Conflict Guidance */}
-          {duplicateMessage && (
+          {/* Test Already COMPLETED — hard block, no resume allowed */}
+          {isTestCompleted && duplicateMessage && (
+            <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs space-y-3 animate-fadeIn">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold text-emerald-300 text-sm">Test Already Completed</p>
+                  <p className="leading-relaxed text-emerald-200/90">
+                    {duplicateMessage}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[11px] text-emerald-400/70 pl-7">
+                Your results are recorded. If you believe this is a mistake, please contact your security administrator.
+              </p>
+            </div>
+          )}
+
+          {/* IN-PROGRESS Duplicate — offer resume */}
+          {!isTestCompleted && duplicateMessage && (
             <div className="p-3.5 rounded-xl bg-cyan-950/70 border border-cyan-500/40 text-cyan-200 text-xs space-y-2 animate-fadeIn">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
@@ -253,6 +279,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 setName(e.target.value);
                 if (error) setError('');
                 if (duplicateMessage) setDuplicateMessage(null);
+                if (isTestCompleted) setIsTestCompleted(false);
               }}
               className="w-full min-h-[44px] px-4 py-2.5 text-sm bg-slate-950 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
             />
@@ -269,6 +296,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               onChange={(e) => {
                 setDepartment(e.target.value);
                 if (duplicateMessage) setDuplicateMessage(null);
+                if (isTestCompleted) setIsTestCompleted(false);
               }}
               className="w-full min-h-[44px] px-4 py-2.5 text-sm bg-slate-950 border border-slate-700/80 rounded-xl text-white focus:outline-none focus:border-cyan-400 transition-colors cursor-pointer"
             >
