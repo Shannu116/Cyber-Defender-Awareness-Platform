@@ -17,18 +17,20 @@ export function getAtlasUri() {
     uri = `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@cluster-microcare.gepmhm7.mongodb.net`;
   }
 
-  if (uri) {
-    // Ensure standard database name cyber_defender is targeted
-    if (!uri.includes('/cyber_defender')) {
-      if (uri.includes('?')) {
-        uri = uri.replace('?', '/cyber_defender?');
-      } else {
-        uri = `${uri}/cyber_defender?retryWrites=true&w=majority&appName=Cluster-microcare`;
-      }
-    }
+  if (!uri) {
+    return 'mongodb://127.0.0.1:27017/cyber_defender';
   }
 
-  return uri || 'mongodb://127.0.0.1:27017/cyber_defender';
+  try {
+    const isSrv = uri.startsWith('mongodb+srv://');
+    const dummy = uri.replace('mongodb+srv://', 'http://').replace('mongodb://', 'http://');
+    const url = new URL(dummy);
+    const search = url.search || '?retryWrites=true&w=majority&appName=Cluster-microcare';
+    const auth = url.username ? `${encodeURIComponent(decodeURIComponent(url.username))}:${encodeURIComponent(decodeURIComponent(url.password))}@` : '';
+    return `${isSrv ? 'mongodb+srv://' : 'mongodb://'}${auth}${url.host}/cyber_defender${search}`;
+  } catch (e) {
+    return uri;
+  }
 }
 
 export async function connectDB() {
