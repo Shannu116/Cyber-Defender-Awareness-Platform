@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { AdminStats, QuizAttempt, QuestionCategory } from '../types';
-import { fetchAdminStats, fetchAdminAttempts, resetAdminDemo } from '../services/api';
+import { AdminStats, QuizAttempt, QuestionCategory, QuizSessionData } from '../types';
+import { 
+  fetchAdminStats, 
+  fetchAdminAttempts, 
+  resetAdminDemo,
+  fetchAdminInProgressSessions,
+  adminResetSession,
+  adminDeleteAttempt
+} from '../services/api';
 import { 
   Users, 
   Award, 
@@ -17,7 +24,11 @@ import {
   Layers,
   Sparkles,
   LogOut,
-  UserCheck
+  UserCheck,
+  Activity,
+  Trash2,
+  RefreshCw,
+  PlayCircle
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -33,8 +44,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
+  const [inProgressSessions, setInProgressSessions] = useState<QuizSessionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
+  const [resettingSessionId, setResettingSessionId] = useState<string | null>(null);
+  const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(null);
   const [selectedAttempt, setSelectedAttempt] = useState<QuizAttempt | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,9 +56,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       setLoading(true);
       setError(null);
-      const [statsResult, attemptsResult] = await Promise.allSettled([
+      const [statsResult, attemptsResult, inProgressResult] = await Promise.allSettled([
         fetchAdminStats(),
         fetchAdminAttempts(),
+        fetchAdminInProgressSessions()
       ]);
 
       if (statsResult.status === 'fulfilled') {
@@ -66,6 +81,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           return;
         }
       }
+
+      if (inProgressResult.status === 'fulfilled') {
+        setInProgressSessions(inProgressResult.value || []);
+      } else {
+        console.error('Failed to fetch in-progress sessions:', inProgressResult.reason);
+      }
     } catch (err: any) {
       console.error('Failed to load admin stats:', err);
       setError('Failed to synchronize with MongoDB. Please click refresh.');
@@ -79,7 +100,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, []);
 
   const handleClearRecords = async () => {
-    if (!confirm('Are you sure you want to clear all recorded quiz attempts?')) return;
+    if (!confirm('Are you sure you want to clear all recorded quiz attempts and active sessions?')) return;
     try {
       setResetting(true);
       await resetAdminDemo();
@@ -88,6 +109,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       alert('Error clearing records: ' + err);
     } finally {
       setResetting(false);
+    }
+  };
+
+  const handleResetSingleSession = async (session: QuizSessionData) => {
+    const sessId = session.id || (session as any)._id;
+    if (!sessId) return;
+    if (!confirm(`Are you sure you want to reset the active session for "${session.participantName}" (${session.department})?\n\nThis will allow them to restart their mission afresh.`)) {
+      return;
+    }
+
+    try {
+      setResettingSessionId(sessId);
+      await adminResetSession(sessId);
+      await loadData();
+    } catch (err: any) {
+      alert('Failed to reset session: ' + err.message);
+    } finally {
+      setResettingSessionId(null);
+    }
+  };
+
+  const handleDeleteSingleAttempt = async (attempt: QuizAttempt) => {
+    if (!attempt._id) return;
+    if (!confirm(`Are you sure you want to delete the quiz attempt record for "${attempt.participantName}" (${attempt.department})?`)) {
+      return;
+    }
+
+    try {
+      setDeletingAttemptId(attempt._id);
+      await adminDeleteAttempt(attempt._id);
+      await loadData();
+    } catch (err: any) {
+      alert('Failed to delete attempt: ' + err.message);
+    } finally {
+      setDeletingAttemptId(null);
     }
   };
 
@@ -105,19 +161,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   // Derive displayStats: use server stats or compute from live MongoDB attempts
-  const displayStats = stats || (attempts.length > 0 ? {
+  const displayStats: AdminStats | null = stats || (attempts.length > 0 ? {
     totalParticipants: attempts.length,
+    inProgressSessions: inProgressSessions.length,
     averageScore: Math.round(attempts.reduce((a, b) => a + (b.score || 0), 0) / attempts.length),
     averagePercentage: Math.round(attempts.reduce((a, b) => a + (b.percentage || 0), 0) / attempts.length),
     completionRate: 100,
-    averageCompletionTime: `${Math.floor(Math.round(attempts.reduce((a, b) => a + (b.completionTimeSeconds || 0), 0) / attempts.length) / 60)}m ${Math.floor(Math.round(attempts.reduce((a, b) => a + (b.completionTimeSeconds || 0), 0) / attempts.length) % 60).toString().padStart(2, '0')}s`,
+    averageCompletionTime: `${Math.floor(Math.round(attempts.reduce((a, b) => a + (b.completionTimeSeconds || 0), 0) / attempts.length) / 60)}m ${Math.floor(Math.round(attempts.reduce((a, b) => a + (b.completionTimeSeconds || 0), 0) / attempts.length) % 60).toString().padStart(2, '00')}s`,
     mostCommonlyMissedQuestion: 'None identified yet',
     categoryPerformance: [
-      { name: 'Phishing Detection', averagePercentage: 80 },
-      { name: 'Social Engineering', averagePercentage: 80 },
-      { name: 'Password Safety', averagePercentage: 85 },
-      { name: 'Incident Response', averagePercentage: 75 },
-      { name: 'Remote Work Safety', averagePercentage: 85 }
+      { name: 'Phishing Detection' as const, averagePercentage: 80 },
+      { name: 'Social Engineering' as const, averagePercentage: 80 },
+      { name: 'Password Safety' as const, averagePercentage: 85 },
+      { name: 'Incident Response' as const, averagePercentage: 75 },
+      { name: 'Remote Work Safety' as const, averagePercentage: 85 }
     ],
     levelDistribution: {
       'Cyber Champion': attempts.filter(a => a.level === 'Cyber Champion').length,
@@ -204,8 +261,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* Top 5 Core Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Top 6 Core Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* Total Participants */}
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-md">
           <div className="flex items-center justify-between mb-2">
@@ -213,10 +270,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <Users className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="text-2xl font-black text-white font-mono">
-            {displayStats?.totalParticipants || 0}
+            {displayStats?.totalParticipants || attempts.length}
           </div>
           <div className="text-[11px] text-emerald-400 font-mono mt-1">
-            Live Submissions
+            Completed Tests
+          </div>
+        </div>
+
+        {/* In Progress Sessions */}
+        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-md">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-mono uppercase text-slate-400">In Progress</span>
+            <Activity className="w-4 h-4 text-amber-400 animate-pulse" />
+          </div>
+          <div className="text-2xl font-black text-amber-300 font-mono">
+            {displayStats?.inProgressSessions ?? inProgressSessions.length}
+          </div>
+          <div className="text-[11px] text-amber-400/80 font-mono mt-1">
+            Active Test Sessions
           </div>
         </div>
 
@@ -263,16 +334,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* Most Commonly Missed */}
-        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-md sm:col-span-2 lg:col-span-1">
+        <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-md">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-mono uppercase text-slate-400">Most Missed Question</span>
+            <span className="text-[11px] font-mono uppercase text-slate-400">Most Missed</span>
             <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-xs font-bold text-amber-300 truncate" title={displayStats?.mostCommonlyMissedQuestion}>
-            {displayStats?.mostCommonlyMissedQuestion || 'No quiz attempts recorded yet'}
+            {displayStats?.mostCommonlyMissedQuestion || 'None identified yet'}
           </div>
           <div className="text-[11px] text-slate-400 font-mono mt-1">
-            Highest vulnerability area
+            Top Vulnerability
           </div>
         </div>
       </div>
@@ -371,6 +442,93 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
+      {/* Active In-Progress Sessions Table */}
+      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <h3 className="font-bold text-sm text-white flex items-center gap-2">
+              <Activity className="w-4 h-4 text-amber-400" />
+              Active In-Progress Sessions ({inProgressSessions.length})
+            </h3>
+            <p className="text-xs text-slate-400">
+              Participants currently taking the test. Administrators can reset an active session if a participant gets stuck.
+            </p>
+          </div>
+          <button
+            onClick={loadData}
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            title="Refresh active sessions"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {inProgressSessions.length === 0 ? (
+          <div className="text-center py-8 px-4 rounded-xl bg-slate-950/40 border border-slate-800/80">
+            <p className="text-xs text-slate-400 font-mono">No active in-progress test sessions at this moment.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400 font-mono uppercase text-[11px]">
+                  <th className="py-3 px-4">Participant</th>
+                  <th className="py-3 px-4">Department</th>
+                  <th className="py-3 px-4">Current Progress</th>
+                  <th className="py-3 px-4">Answers Logged</th>
+                  <th className="py-3 px-4">Active Time</th>
+                  <th className="py-3 px-4">Last Activity</th>
+                  <th className="py-3 px-4 text-right">Reset Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-sans">
+                {inProgressSessions.map(sess => {
+                  const sessId = sess.id || (sess as any)._id;
+                  const activeSecs = sess.activeSeconds || 0;
+                  const mins = Math.floor(activeSecs / 60);
+                  const secs = Math.floor(activeSecs % 60).toString().padStart(2, '0');
+                  const lastActive = sess.lastActivityAt ? new Date(sess.lastActivityAt).toLocaleTimeString() : 'Recent';
+
+                  return (
+                    <tr key={sessId} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-white">
+                        {sess.participantName}
+                      </td>
+                      <td className="py-3 px-4 text-slate-300 font-mono">
+                        {sess.department}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-cyan-300 font-semibold">
+                        Challenge {(sess.currentIndex || 0) + 1} of 10
+                      </td>
+                      <td className="py-3 px-4 text-slate-400 font-mono">
+                        {sess.answers?.length || 0} saved
+                      </td>
+                      <td className="py-3 px-4 text-slate-400 font-mono">
+                        {mins}m {secs}s
+                      </td>
+                      <td className="py-3 px-4 text-slate-400 font-mono">
+                        {lastActive}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => handleResetSingleSession(sess)}
+                          disabled={resettingSessionId === sessId}
+                          className="px-2.5 py-1 text-[11px] font-mono rounded-lg bg-rose-950/40 text-rose-300 border border-rose-500/30 hover:bg-rose-900/50 hover:text-white transition-colors flex items-center gap-1 ml-auto disabled:opacity-50"
+                          title="Reset this participant's session"
+                        >
+                          <RotateCcw className={`w-3 h-3 ${resettingSessionId === sessId ? 'animate-spin' : ''}`} />
+                          <span>{resettingSessionId === sessId ? 'Resetting...' : 'Reset'}</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Recent Quiz Attempts Data Table (Live from MongoDB) */}
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -443,12 +601,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         {dateStr}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => setSelectedAttempt(att)}
-                          className="text-xs text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
-                        >
-                          Inspect
-                        </button>
+                        <div className="flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => setSelectedAttempt(att)}
+                            className="text-xs text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
+                          >
+                            Inspect
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSingleAttempt(att)}
+                            disabled={deletingAttemptId === att._id}
+                            className="text-xs text-slate-500 hover:text-rose-400 transition-colors p-1"
+                            title="Delete this quiz attempt record"
+                          >
+                            <Trash2 className={`w-3.5 h-3.5 ${deletingAttemptId === att._id ? 'animate-pulse text-rose-400' : ''}`} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

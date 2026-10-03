@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Question, QuizAttempt, QuestionCategory, UserAnswerSubmission } from './types';
+import { Question, QuizAttempt, QuestionCategory, UserAnswerSubmission, SessionResumeResponse } from './types';
 import { fetchQuestions, fetchWeakAreaQuestions, submitQuizAttempt } from './services/api';
 import { fallbackQuestions } from './data/fallbackQuestions';
 import { Navbar } from './components/Navbar';
@@ -23,8 +23,9 @@ import { AdminLogin } from './components/AdminLogin';
 import { EchoProvider } from './context/EchoContext';
 import { EchoTutorTab } from './components/EchoTutorTab';
 import { isAdminAuthenticated, clearAdminToken, verifyAdminSession } from './services/api';
+import { useSession } from './hooks/useSession';
 import { sounds } from './utils/sound';
-import { Database, Lock } from 'lucide-react';
+import { Database, Lock, Copy, Check, RotateCcw, AlertTriangle, ArrowRight } from 'lucide-react';
 
 export function App() {
   const [currentStep, setCurrentStep] = useState<'welcome' | 'briefing' | 'quiz' | 'results' | 'admin'>(() => {
@@ -39,6 +40,22 @@ export function App() {
   const [questions, setQuestions] = useState<Question[]>(fallbackQuestions);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<UserAnswerSubmission[]>([]);
+  const [copiedResumeCode, setCopiedResumeCode] = useState(false);
+
+  // Resumable test session management
+  const {
+    session,
+    deviceToken,
+    resumeCode,
+    saveStatus,
+    isColdStarting,
+    resumePromptData,
+    startNewSession,
+    saveAnswer,
+    resumeWithCredentials,
+    completeActiveSession,
+    dismissResumePrompt
+  } = useSession(questions.length);
 
   const [score, setScore] = useState(0);
   const [maxScore, setMaxScore] = useState(1000);
@@ -148,11 +165,91 @@ export function App() {
     if (next) sounds.playClick();
   };
 
-  const handleStartMission = (name: string, dept: string) => {
+  const handleStartMission = async (name: string, dept: string, email?: string) => {
     sounds.playClick();
     setParticipantName(name);
     setDepartment(dept);
+
+    // If not practice mode, register with server session
+    if (!isPracticeMode) {
+      await startNewSession(name, dept, email);
+    }
     setCurrentStep('briefing');
+  };
+
+  const handleResumeMission = async (
+    name: string,
+    dept: string,
+    resumeCodeInput?: string,
+    emailInput?: string
+  ) => {
+    sounds.playClick();
+    const result = await resumeWithCredentials({
+      participantName: name,
+      department: dept,
+      resumeCode: resumeCodeInput,
+      email: emailInput
+    });
+
+    setParticipantName(result.session.participantName);
+    setDepartment(result.session.department);
+
+    if (result.session.status === 'completed' && result.attempt) {
+      setAttemptResult(result.attempt);
+      setCurrentStep('results');
+      return;
+    }
+
+    if (result.session.answers && result.session.answers.length > 0) {
+      const restoredAnswers: UserAnswerSubmission[] = result.session.answers.map(a => ({
+        questionId: a.questionId,
+        questionTitle: a.questionTitle || '',
+        category: (a.category as QuestionCategory) || 'Phishing Detection',
+        userResponse: a.userResponse,
+        timeSpentSeconds: a.timeSpentSeconds
+      }));
+      setAnswers(restoredAnswers);
+    } else {
+      setAnswers([]);
+    }
+
+    const targetIndex = Math.min(result.session.currentIndex || 0, questions.length - 1);
+    setCurrentQuestionIndex(targetIndex);
+    setIsCurrentSubmitted(false);
+    setCurrentEvaluation(null);
+    setQuestionStartTime(Date.now());
+    setCurrentStep('quiz');
+  };
+
+  const handleConfirmResume = () => {
+    if (!resumePromptData) return;
+    sounds.playClick();
+    setParticipantName(resumePromptData.participantName);
+    setDepartment(resumePromptData.department);
+
+    if (resumePromptData.completedAttempt) {
+      setAttemptResult(resumePromptData.completedAttempt);
+      setCurrentStep('results');
+      return;
+    }
+
+    if (resumePromptData.answers && resumePromptData.answers.length > 0) {
+      const restoredAnswers: UserAnswerSubmission[] = resumePromptData.answers.map(a => ({
+        questionId: a.questionId,
+        questionTitle: a.questionTitle || '',
+        category: (a.category as QuestionCategory) || 'Phishing Detection',
+        userResponse: a.userResponse,
+        timeSpentSeconds: a.timeSpentSeconds
+      }));
+      setAnswers(restoredAnswers);
+    }
+
+    const targetIndex = Math.min(resumePromptData.currentIndex || 0, questions.length - 1);
+    setCurrentQuestionIndex(targetIndex);
+    setIsCurrentSubmitted(false);
+    setCurrentEvaluation(null);
+    setQuestionStartTime(Date.now());
+    setCurrentStep('quiz');
   };
 
   const handleBeginMission = () => {
@@ -258,6 +355,17 @@ export function App() {
     };
 
     setAnswers(prev => [...prev, submission]);
+
+    // Autosave answer to active session if not in practice mode
+    if (!isPracticeMode && session && deviceToken) {
+      saveAnswer({
+        questionId: currentQ.id,
+        questionTitle: currentQ.title,
+        category: currentQ.category,
+        userResponse,
+        timeSpentSeconds: timeSpent
+      });
+    }
   };
 
   const handleNextQuestion = async () => {
@@ -278,7 +386,15 @@ export function App() {
     const totalTimeSeconds = Math.max(10, Math.round((Date.now() - startTime) / 1000));
 
     try {
-      // Submit payload to MongoDB Express API
+      if (!isPracticeMode && session && deviceToken) {
+        // Complete the active server-persisted session
+        const result = await completeActiveSession();
+        setAttemptResult(result);
+        setCurrentStep('results');
+        return;
+      }
+
+      // Practice mode or direct submit
       const result = await submitQuizAttempt({
         participantName,
         department,
@@ -377,10 +493,65 @@ export function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
         {/* Screen 1: Welcome Screen */}
         {currentStep === 'welcome' && (
-          <WelcomeScreen
-            onStartMission={handleStartMission}
-            onOpenAdmin={navigateToAdmin}
-          />
+          <div className="space-y-6">
+            {resumePromptData && (
+              <div className="max-w-md mx-auto p-4 sm:p-5 rounded-2xl bg-cyan-950/70 border border-cyan-500/40 shadow-xl text-left space-y-3 animate-fadeIn">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      <RotateCcw className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-mono text-cyan-300 uppercase tracking-wider font-semibold">Active Session Detected</div>
+                      <div className="text-sm font-bold text-white">Welcome back, {resumePromptData.participantName}!</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={dismissResumePrompt}
+                    className="text-slate-400 hover:text-white p-1 text-xs"
+                    title="Dismiss and start fresh"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="text-xs text-slate-300 leading-relaxed">
+                  {resumePromptData.completedAttempt ? (
+                    <span>You have already completed this mission. Click below to view your results.</span>
+                  ) : (
+                    <span>
+                      You have an in-progress mission in <strong>{resumePromptData.department}</strong> at Challenge {resumePromptData.currentIndex + 1} of {resumePromptData.totalQuestions}.
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={dismissResumePrompt}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  >
+                    Start New
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmResume}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-500 text-slate-950 hover:bg-cyan-400 transition-colors flex items-center gap-1.5 shadow-md shadow-cyan-500/20"
+                  >
+                    <span>{resumePromptData.completedAttempt ? 'View Results' : 'Resume Mission'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <WelcomeScreen
+              onStartMission={handleStartMission}
+              onResumeMission={handleResumeMission}
+              onOpenAdmin={navigateToAdmin}
+              isStarting={isColdStarting}
+            />
+          </div>
         )}
 
         {/* Screen 2: Mission Briefing */}
@@ -398,16 +569,62 @@ export function App() {
             {/* Challenge Header Card */}
             <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-lg">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-800">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-mono uppercase px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
                     Challenge {currentQuestionIndex + 1} of {questions.length}
                   </span>
                   <span className="text-xs font-mono text-slate-400">
                     Category: <strong className="text-slate-200">{currentQ.category}</strong>
                   </span>
+                  {/* Autosave Status Indicator */}
+                  {saveStatus === 'saving' && (
+                    <span className="text-[11px] font-mono text-amber-400 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                      Saving...
+                    </span>
+                  )}
+                  {saveStatus === 'saved' && (
+                    <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+                      <Check className="w-3 h-3" />
+                      Saved
+                    </span>
+                  )}
+                  {saveStatus === 'error' && (
+                    <span className="text-[11px] font-mono text-rose-400 flex items-center gap-1" title="Autosave network hiccup. Progress will retry on next answer.">
+                      <AlertTriangle className="w-3 h-3" />
+                      Autosave error
+                    </span>
+                  )}
                 </div>
-                <div className="text-xs font-mono text-cyan-400 font-semibold">
-                  +{currentQ.points} Pts {currentQ.bonusPoints > 0 && `(+${currentQ.bonusPoints} Bonus)`}
+
+                <div className="flex items-center gap-3">
+                  {resumeCode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(resumeCode);
+                        setCopiedResumeCode(true);
+                        setTimeout(() => setCopiedResumeCode(false), 2000);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-cyan-300 flex items-center gap-1.5 transition-colors"
+                      title="Click to copy your unique 8-character resume code"
+                    >
+                      {copiedResumeCode ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span className="text-emerald-400 font-bold">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3 text-slate-400" />
+                          <span>Code: <strong>{resumeCode}</strong></span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <div className="text-xs font-mono text-cyan-400 font-semibold">
+                    +{currentQ.points} Pts {currentQ.bonusPoints > 0 && `(+${currentQ.bonusPoints} Bonus)`}
+                  </div>
                 </div>
               </div>
 

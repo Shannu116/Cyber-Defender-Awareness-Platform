@@ -158,11 +158,13 @@ export interface QuizAttempt {
   categoryBreakdown: Record<QuestionCategory, CategoryStat>;
   recommendations: string[];
   isPracticeQuiz?: boolean;
+  sessionId?: string | null;
   createdAt?: string;
 }
 
 export interface AdminStats {
   totalParticipants: number;
+  inProgressSessions?: number;
   averageScore: number;
   averagePercentage: number;
   completionRate: number;
@@ -180,5 +182,51 @@ export interface AdminStats {
     level: string;
     completionTimeSeconds: number;
     createdAt: string;
+    sessionId?: string | null;
   }>;
 }
+
+export interface SessionAnswerItem {
+  questionId: string;
+  questionTitle?: string;
+  category?: string;
+  userResponse: any;
+  timeSpentSeconds: number;
+  answeredAt?: string;
+}
+
+export interface QuizSessionData {
+  id: string;
+  participantName: string;
+  department: string;
+  status: 'in_progress' | 'completed';
+  currentIndex: number;
+  activeSeconds: number;
+  resumeCode: string;
+  answers: SessionAnswerItem[];
+  questionIds: string[];
+  attemptId?: string | null;
+  startedAt?: string;
+  lastActivityAt?: string;
+}
+
+export interface SessionStartResponse {
+  success: boolean;
+  sessionId: string;
+  deviceToken: string;
+  resumeCode: string;
+  currentIndex: number;
+  participantName: string;
+  department: string;
+  questionIds: string[];
+}
+
+export interface SessionResumeResponse {
+  success: boolean;
+  sessionId: string;
+  deviceToken: string;
+  resumeCode: string;
+  session: QuizSessionData;
+  attempt?: QuizAttempt | null;
+}
+
