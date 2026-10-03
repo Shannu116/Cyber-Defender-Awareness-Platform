@@ -21,7 +21,7 @@ export const SpotPhishChallenge: React.FC<SpotPhishChallengeProps> = ({
   submitted,
   onSubmitAnswer,
 }) => {
-  const { explainThreat, explainNeutral } = useEcho();
+  const { explainThreat, explainNeutral, registerChecklist, clearChecklist } = useEcho();
 
   // Elements found by the user
   const [foundIds, setFoundIds] = useState<string[]>([]);
@@ -29,6 +29,37 @@ export const SpotPhishChallenge: React.FC<SpotPhishChallengeProps> = ({
 
   // Total suspicious targets to find
   const totalSuspiciousCount = 4;
+
+  // Register Echo checklist on mount so the hint engine knows what to find
+  React.useEffect(() => {
+    registerChecklist([
+      {
+        id: 'suspicious_sender',
+        label: 'Suspicious sender domain',
+        hint: 'Look carefully at the email address in the "From" field — compare the domain after the @ symbol to what your real company domain looks like.',
+        severity: 'high',
+      },
+      {
+        id: 'suspicious_greeting',
+        label: 'Generic impersonal greeting',
+        hint: 'Read the opening line of the email. Does it address you by your name, or does it use a vague opener like "Hello," or "Dear User,"?',
+        severity: 'medium',
+      },
+      {
+        id: 'suspicious_urgency',
+        label: 'Manufactured urgency / threat',
+        hint: 'Scan the body text for language that creates panic — things like deadlines, threats of account suspension, or salary delays. Legitimate systems rarely pressure you like this.',
+        severity: 'high',
+      },
+      {
+        id: 'suspicious_link',
+        label: 'Fake credential harvesting link',
+        hint: 'Hover over (or look at) any button or link in the email. Does the destination URL match your real company portal, or does it point somewhere else entirely?',
+        severity: 'critical',
+      },
+    ]);
+    return () => clearChecklist();
+  }, [registerChecklist, clearChecklist]);
 
   const handleElementClick = (elementId: string, isSuspicious: boolean, label?: string, explanation?: string) => {
     if (submitted) return;

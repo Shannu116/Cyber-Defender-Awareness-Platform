@@ -217,7 +217,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               Enterprise Database Analytics
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">
             Security Awareness Admin Console
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
@@ -228,7 +228,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300">
             <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Admin: <strong className="text-white">{adminUser?.username || 'admin'}</strong></span>
+            <span>Admin: <strong className="text-slate-100">{adminUser?.username || 'admin'}</strong></span>
           </div>
 
           {attempts.length > 0 && (
@@ -245,7 +245,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <button
             onClick={onBackToQuiz}
-            className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-slate-900 text-slate-200 border border-slate-800 hover:border-slate-700 hover:text-white flex items-center gap-1.5 transition-all"
+            className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-slate-900 text-slate-200 border border-slate-800 hover:border-slate-700 hover:text-slate-100 flex items-center gap-1.5 transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Quiz</span>
@@ -269,7 +269,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span className="text-[11px] font-mono uppercase text-slate-400">Total Participants</span>
             <Users className="w-4 h-4 text-cyan-400" />
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-black text-slate-100 font-mono">
             {displayStats?.totalParticipants || attempts.length}
           </div>
           <div className="text-[11px] text-emerald-400 font-mono mt-1">
@@ -297,7 +297,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span className="text-[11px] font-mono uppercase text-slate-400">Average Score</span>
             <Award className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-black text-slate-100 font-mono">
             {displayStats?.averageScore || 0} <span className="text-slate-500 text-base font-normal">/ 1000</span>
           </div>
           <div className="text-[11px] text-cyan-400 font-mono mt-1">
@@ -311,7 +311,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span className="text-[11px] font-mono uppercase text-slate-400">Completion Rate</span>
             <CheckCircle className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-black text-slate-100 font-mono">
             {displayStats?.completionRate ?? 0}%
           </div>
           <div className="text-[11px] text-slate-400 font-mono mt-1">
@@ -325,7 +325,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span className="text-[11px] font-mono uppercase text-slate-400">Avg Completion Time</span>
             <Clock className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="text-2xl font-black text-white font-mono">
+          <div className="text-2xl font-black text-slate-100 font-mono">
             {displayStats?.averageCompletionTime || '0m 00s'}
           </div>
           <div className="text-[11px] text-slate-400 font-mono mt-1">
@@ -353,7 +353,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* Category Performance Bar Chart */}
         <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
+            <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-cyan-400" />
               Category Accuracy Performance
             </h3>
@@ -370,7 +370,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div key={cat.name} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-medium">
                     <span className="text-slate-300">{cat.name}</span>
-                    <span className="font-mono font-bold text-white">{pct}%</span>
+                    <span className="font-mono font-bold text-slate-100">{pct}%</span>
                   </div>
                   <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
                     <div
@@ -393,7 +393,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* Level Distribution & Risk Insights */}
         <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
+            <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-purple-400" />
               Cybersecurity Awareness Level Distribution
             </h3>
@@ -403,7 +403,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div className="p-4 rounded-xl bg-slate-950 border border-amber-500/30">
               <div className="text-[11px] font-mono text-amber-300 uppercase">Cyber Champions</div>
-              <div className="text-2xl font-black text-white font-mono mt-1">
+              <div className="text-2xl font-black text-slate-100 font-mono mt-1">
                 {displayStats?.levelDistribution?.['Cyber Champion'] || 0}
               </div>
               <div className="text-[10px] text-slate-400 mt-1">Score: 850–1000 pts</div>
@@ -411,7 +411,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <div className="p-4 rounded-xl bg-slate-950 border border-cyan-500/30">
               <div className="text-[11px] font-mono text-cyan-300 uppercase">Cyber Defenders</div>
-              <div className="text-2xl font-black text-white font-mono mt-1">
+              <div className="text-2xl font-black text-slate-100 font-mono mt-1">
                 {displayStats?.levelDistribution?.['Cyber Defender'] || 0}
               </div>
               <div className="text-[10px] text-slate-400 mt-1">Score: 700–849 pts</div>
@@ -419,7 +419,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <div className="p-4 rounded-xl bg-slate-950 border border-blue-500/30">
               <div className="text-[11px] font-mono text-blue-300 uppercase">Security Aware</div>
-              <div className="text-2xl font-black text-white font-mono mt-1">
+              <div className="text-2xl font-black text-slate-100 font-mono mt-1">
                 {displayStats?.levelDistribution?.['Security Aware'] || 0}
               </div>
               <div className="text-[10px] text-slate-400 mt-1">Score: 400–699 pts</div>
@@ -427,7 +427,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-700/50">
               <div className="text-[11px] font-mono text-slate-400 uppercase">Needs Practice</div>
-              <div className="text-2xl font-black text-white font-mono mt-1">
+              <div className="text-2xl font-black text-slate-100 font-mono mt-1">
                 {displayStats?.levelDistribution?.['Needs Practice'] || 0}
               </div>
               <div className="text-[10px] text-slate-400 mt-1">Score: 0–399 pts</div>
@@ -446,7 +446,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <div>
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
+            <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
               <Activity className="w-4 h-4 text-amber-400" />
               Active In-Progress Sessions ({inProgressSessions.length})
             </h3>
@@ -491,7 +491,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   return (
                     <tr key={sessId} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-white">
+                      <td className="py-3 px-4 font-semibold text-slate-100">
                         {sess.participantName}
                       </td>
                       <td className="py-3 px-4 text-slate-300 font-mono">
@@ -533,7 +533,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <div>
-            <h3 className="font-bold text-sm text-white flex items-center gap-2">
+            <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
               <Database className="w-4 h-4 text-cyan-400" />
               Live MongoDB Quiz Attempts ({attempts.length} Records)
             </h3>
@@ -580,7 +580,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       key={att._id || Math.random().toString()}
                       className="hover:bg-slate-800/40 transition-colors"
                     >
-                      <td className="py-3 px-4 font-semibold text-white">
+                      <td className="py-3 px-4 font-semibold text-slate-100">
                         {att.participantName}
                       </td>
                       <td className="py-3 px-4 text-slate-300 font-mono">
@@ -633,7 +633,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div>
-                <h4 className="font-bold text-base text-white">
+                <h4 className="font-bold text-base text-slate-100">
                   {selectedAttempt.participantName}
                 </h4>
                 <div className="text-xs text-slate-400 font-mono">
@@ -642,7 +642,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <button
                 onClick={() => setSelectedAttempt(null)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-slate-400 hover:text-slate-100 p-1"
               >
                 ✕
               </button>
