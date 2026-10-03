@@ -47,6 +47,12 @@ const QuizAttemptSchema = new mongoose.Schema({
   recommendations: [{ type: String }],
   isPracticeQuiz: { type: Boolean, default: false },
   sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'QuizSession', default: null, index: true },
+  email: {
+    type: String,
+    lowercase: true,
+    trim: true,
+    select: false  // Never returned in any query — stored only for internal record-keeping
+  },
 }, {
   timestamps: true
 });

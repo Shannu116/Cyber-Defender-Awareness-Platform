@@ -77,21 +77,23 @@ router.post('/start', startLimiter, async (req, res) => {
     const trimmedDept = department.trim();
     const nameKey = normalizeName(trimmedName);
 
-    // Pre-check for duplicate active or completed session
+    // Pre-check for duplicate active or completed session (nameKey is always lowercased,
+    // so "Red Criminal", "red criminal", "RED CRIMINAL" all produce the same nameKey)
     const existing = await QuizSession.findOne({ nameKey, department: trimmedDept });
     if (existing) {
+      const storedName = existing.participantName; // use original registered casing in message
       if (existing.status === 'in_progress') {
         return res.status(409).json({
           success: false,
           isDuplicate: true,
-          error: `Someone has already registered as "${trimmedName}" in ${trimmedDept}. If that's you, resume your test below. If you're a different person, add your middle initial or choose your correct department.`
+          error: `Someone has already registered as "${storedName}" in ${trimmedDept}. If that's you, resume your test below. If you're a different person, add your middle initial or choose your correct department.`
         });
       } else {
         return res.status(409).json({
           success: false,
           isDuplicate: true,
           isCompleted: true,
-          error: `"${trimmedName}" in ${trimmedDept} has already completed their cybersecurity awareness test. If you need a retake, contact your security administrator.`
+          error: `"${storedName}" in ${trimmedDept} has already completed the cybersecurity awareness test. If you need a retake, please contact your security administrator.`
         });
       }
     }
@@ -389,7 +391,7 @@ router.post('/:id/complete', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Device token required.' });
     }
 
-    const session = await QuizSession.findById(id);
+    const session = await QuizSession.findById(id).select('+email');
     if (!session) {
       return res.status(404).json({ success: false, error: 'Session not found.' });
     }
@@ -413,6 +415,7 @@ router.post('/:id/complete', async (req, res) => {
     const newAttempt = new QuizAttempt({
       participantName: session.participantName,
       department: session.department,
+      email: session.email || undefined,   // carry email from session → stored with select:false
       score: graded.totalScore,
       maxScore: graded.totalMaxScore,
       percentage: graded.finalPercentage,
