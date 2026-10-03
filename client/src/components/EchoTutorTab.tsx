@@ -1,306 +1,306 @@
-import React from 'react';
-import { useEcho, EchoExplanation } from '../context/EchoContext';
-import { 
-  Bot, 
-  Sparkles, 
-  X, 
-  ShieldAlert, 
-  ShieldCheck, 
-  AlertTriangle, 
-  Info, 
-  Lightbulb, 
-  Target, 
-  ChevronRight, 
-  RotateCcw,
-  Zap,
-  CheckCircle2,
-  Clock
-} from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useEcho } from '../context/EchoContext';
+import { Send, X, Trash2, ChevronDown } from 'lucide-react';
 
+// ─── Echo Avatar ─────────────────────────────────────────────────────────────
+const EchoAvatar: React.FC<{ size?: 'sm' | 'md' | 'lg'; pulse?: boolean }> = ({
+  size = 'md',
+  pulse = false,
+}) => {
+  const dims = size === 'sm' ? 'w-7 h-7 text-base' : size === 'lg' ? 'w-12 h-12 text-2xl' : 'w-9 h-9 text-xl';
+  return (
+    <div className={`relative shrink-0 ${dims}`}>
+      {pulse && (
+        <span className="absolute inset-0 rounded-full bg-green-500/40 animate-ping" />
+      )}
+      <div className={`relative ${dims} rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30 font-bold text-slate-900 select-none`}>
+        E
+      </div>
+    </div>
+  );
+};
+
+// ─── Typing Dots ──────────────────────────────────────────────────────────────
+const TypingDots: React.FC = () => (
+  <div className="flex items-center gap-1 px-1 py-0.5">
+    {[0, 1, 2].map(i => (
+      <span
+        key={i}
+        className="w-2 h-2 rounded-full bg-green-400 animate-bounce"
+        style={{ animationDelay: `${i * 150}ms`, animationDuration: '800ms' }}
+      />
+    ))}
+  </div>
+);
+
+// ─── Parse bold markdown (**text**) into JSX ──────────────────────────────────
+function parseBold(text: string): React.ReactNode[] {
+  const parts = text.split(/\*\*(.*?)\*\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i} className="text-white font-semibold">{part}</strong> : part
+  );
+}
+
+// ─── Render a single chat message ─────────────────────────────────────────────
+const ChatBubble: React.FC<{ role: 'echo' | 'user'; text: string; isTyping?: boolean }> = ({
+  role,
+  text,
+  isTyping,
+}) => {
+  const isEcho = role === 'echo';
+
+  return (
+    <div className={`flex items-end gap-2.5 ${isEcho ? 'justify-start' : 'justify-end'}`}>
+      {isEcho && <EchoAvatar size="sm" />}
+
+      <div
+        className={`max-w-[82%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+          isEcho
+            ? 'bg-slate-800 text-slate-200 rounded-bl-sm border border-slate-700/60'
+            : 'bg-green-600 text-white rounded-br-sm'
+        }`}
+      >
+        {isTyping ? (
+          <TypingDots />
+        ) : (
+          isEcho
+            ? parseBold(text)
+            : text
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Main EchoTutorTab component ──────────────────────────────────────────────
 export const EchoTutorTab: React.FC = () => {
-  const { 
-    isOpen, 
-    closeEcho, 
-    toggleEcho, 
-    activeFinding, 
-    history, 
-    selectHistoryItem, 
-    clearEchoHistory 
+  const {
+    isOpen,
+    closeEcho,
+    toggleEcho,
+    messages,
+    isEchoTyping,
+    unreadCount,
+    history,
+    sendUserMessage,
+    clearEchoHistory,
   } = useEcho();
 
-  const threatHistory = history.filter(h => h.type === 'threat');
+  const [input, setInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const getSeverityBadge = (severity?: string) => {
-    switch (severity) {
-      case 'critical':
-        return {
-          bg: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-          label: 'CRITICAL THREAT'
-        };
-      case 'high':
-        return {
-          bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-          label: 'HIGH RISK RED FLAG'
-        };
-      case 'medium':
-        return {
-          bg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-          label: 'SUSPICIOUS INDICATOR'
-        };
-      case 'neutral':
-        return {
-          bg: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
-          label: 'AUTHENTIC ELEMENT'
-        };
-      default:
-        return {
-          bg: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
-          label: 'OBSERVATION'
-        };
+  // Auto-scroll to bottom when new message arrives
+  useEffect(() => {
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isOpen]);
+
+  // Focus input when opened
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
+  }, [isOpen]);
+
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollBtn(distFromBottom > 120);
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSend = () => {
+    const trimmed = input.trim();
+    if (!trimmed || isEchoTyping) return;
+    sendUserMessage(trimmed);
+    setInput('');
+    inputRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
+  const threatCount = history.filter(h => h.type === 'threat').length;
+
   return (
     <>
-      {/* -------------------------------------------------------------
-          FLOATING DOCKED TAB TRIGGER (Visible when drawer is closed)
-         ------------------------------------------------------------- */}
+      {/* ── Floating trigger button (when closed) ───────────────────────── */}
       {!isOpen && (
         <button
           type="button"
           onClick={toggleEcho}
           aria-label="Open Echo AI Tutor"
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-slate-900/95 hover:bg-slate-850 text-white border-2 border-cyan-500/50 shadow-2xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-105 active:scale-95 transition-all duration-300 group backdrop-blur-md"
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-2xl bg-[#1c2333] hover:bg-[#212d40] text-white border border-green-500/40 shadow-xl shadow-green-900/30 hover:shadow-green-500/30 hover:scale-105 active:scale-95 transition-all duration-200"
         >
-          <div className="relative">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/40">
-              <Bot className="w-4 h-4 animate-pulse" />
-            </div>
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-          </div>
+          <EchoAvatar size="sm" pulse={unreadCount > 0} />
 
-          <div className="text-left font-mono">
-            <div className="text-xs font-bold flex items-center gap-1.5 text-white">
-              <span>Echo</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+          <div className="text-left">
+            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+              Echo
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-300 border border-green-500/30 font-mono">
                 AI Tutor
               </span>
             </div>
             <div className="text-[10px] text-slate-400">
-              {threatHistory.length > 0 
-                ? `${threatHistory.length} threat${threatHistory.length > 1 ? 's' : ''} analyzed`
-                : 'Tap to open advice'}
+              {threatCount > 0
+                ? `${threatCount} threat${threatCount > 1 ? 's' : ''} found`
+                : 'Ask me anything'}
             </div>
           </div>
+
+          {unreadCount > 0 && (
+            <span className="ml-1 w-5 h-5 rounded-full bg-green-500 text-slate-900 text-[10px] font-black flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
       )}
 
-      {/* -------------------------------------------------------------
-          BACKDROP OVERLAY (Mobile click-outside to close)
-         ------------------------------------------------------------- */}
+      {/* ── Mobile backdrop ──────────────────────────────────────────────── */}
       {isOpen && (
         <div
           onClick={closeEcho}
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-50 lg:hidden"
         />
       )}
 
-      {/* -------------------------------------------------------------
-          ECHO SIDEBAR DRAWER PANEL
-         ------------------------------------------------------------- */}
+      {/* ── Sidebar drawer ───────────────────────────────────────────────── */}
       <aside
-        className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col justify-between transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[400px] bg-[#1c2333] border-l border-slate-700/60 shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* Top Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/90 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-600 p-0.5 shadow-lg shadow-cyan-500/30">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-cyan-300">
-                <Bot className="w-5 h-5" />
-              </div>
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+        {/* Header */}
+        <div className="shrink-0 px-4 py-3 bg-[#161d2e] border-b border-slate-700/60 flex items-center gap-3">
+          <EchoAvatar size="md" pulse />
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm text-white">Echo</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 border border-green-500/30">
+                Security Tutor
+              </span>
+              {/* Online dot */}
+              <span className="flex items-center gap-1 ml-auto text-[10px] text-emerald-400 font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                online
               </span>
             </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm sm:text-base text-white font-mono tracking-tight">
-                  Echo
-                </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                  Security AI Tutor
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 font-sans">
-                Real-time threat tutor & forensic guide
-              </p>
-            </div>
+            <p className="text-[11px] text-slate-400 truncate">
+              Click any suspicious element · I'll explain it
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={closeEcho}
-            aria-label="Close Echo Tutor"
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {history.length > 0 && (
+              <button
+                type="button"
+                onClick={clearEchoHistory}
+                aria-label="Clear chat history"
+                title="Clear chat"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={closeEcho}
+              aria-label="Close Echo"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Scrollable Center Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
-          {/* Active Explanation View */}
-          {activeFinding ? (
-            <div className="space-y-4 animate-fadeIn">
-              {/* Badge & Detection Header */}
-              <div className="flex items-center justify-between text-xs font-mono">
-                {(() => {
-                  const badge = getSeverityBadge(activeFinding.severity);
-                  return (
-                    <span className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold ${badge.bg}`}>
-                      {badge.label}
-                    </span>
-                  );
-                })()}
-
-                {activeFinding.detectedAt && (
-                  <span className="text-slate-500 text-[10px] flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>Analyzed {activeFinding.detectedAt}</span>
-                  </span>
-                )}
-              </div>
-
-              {/* Title Card */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 shadow-md space-y-1">
-                <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                  {activeFinding.type === 'threat' ? (
-                    <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
-                  ) : (
-                    <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
-                  )}
-                  <span>{activeFinding.title}</span>
-                </h4>
-                {activeFinding.subtitle && (
-                  <p className="text-xs text-slate-400 font-mono">
-                    {activeFinding.subtitle}
-                  </p>
-                )}
-              </div>
-
-              {/* Echo's Tutor Breakdown (Speech Bubble) */}
-              <div className="relative p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-xs sm:text-sm text-slate-200 space-y-2.5 shadow-md">
-                <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Echo's Analysis:</span>
-                </div>
-                <p className="leading-relaxed font-sans text-slate-200">
-                  {activeFinding.explanation}
-                </p>
-              </div>
-
-              {/* Attacker's Motive Section */}
-              {activeFinding.attackerObjective && (
-                <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-1.5 shadow-sm">
-                  <div className="font-bold text-amber-300 flex items-center gap-1.5">
-                    <Target className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span>Attacker's Objective:</span>
-                  </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
-                    {activeFinding.attackerObjective}
-                  </p>
-                </div>
-              )}
-
-              {/* Pro Tip Section */}
-              {activeFinding.proTip && (
-                <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 text-xs space-y-1.5 shadow-sm">
-                  <div className="font-bold text-emerald-300 flex items-center gap-1.5">
-                    <Lightbulb className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>How to Spot It in the Future:</span>
-                  </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
-                    {activeFinding.proTip}
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            /* Empty / Idle State */
-            <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-4 my-auto">
-              <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400">
-                <Bot className="w-7 h-7 animate-pulse" />
-              </div>
-
+        {/* Messages area */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto px-4 py-4 space-y-4 scroll-smooth"
+        >
+          {messages.length === 0 && (
+            /* Empty state */
+            <div className="flex flex-col items-center justify-center h-full text-center gap-4 py-12">
+              <EchoAvatar size="lg" pulse />
               <div>
-                <h4 className="text-sm font-bold text-white mb-1">
-                  Ready to Assist Your Investigation
-                </h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Click on any text, sender address, button, or link in the challenge you suspect is malicious. I'll break down the threat vector right here.
+                <p className="text-sm font-semibold text-white mb-1">I'm Echo</p>
+                <p className="text-xs text-slate-400 leading-relaxed max-w-[260px]">
+                  Your personal security tutor. Tap any part of the challenge that seems suspicious and I'll explain the threat — without spoiling the answer.
                 </p>
               </div>
-
-              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-cyan-300 text-left flex items-start gap-2">
-                <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                <span>
-                  Tip: Look closely at domain spellings, false urgency, and unexpected attachments.
-                </span>
+              <div className="w-full p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-[11px] font-mono text-green-300 text-left">
+                💡 Tip: Look at sender addresses, link URLs, and urgent language first.
               </div>
             </div>
           )}
 
-          {/* History of Discovered Red Flags */}
-          {threatHistory.length > 0 && (
-            <div className="pt-4 border-t border-slate-800 space-y-2.5">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400">
-                <span className="font-bold uppercase tracking-wider text-slate-300">
-                  Discovered Red Flags ({threatHistory.length})
-                </span>
-                <span className="text-[10px] text-slate-500">Click to review</span>
-              </div>
+          {messages.map(msg => (
+            <ChatBubble
+              key={msg.id}
+              role={msg.role}
+              text={msg.text}
+              isTyping={msg.isTyping}
+            />
+          ))}
 
-              <div className="space-y-1.5">
-                {threatHistory.map((item, idx) => {
-                  const isCurrent = activeFinding?.id === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => selectHistoryItem(item)}
-                      className={`w-full text-left p-2.5 rounded-xl border text-xs transition-all flex items-center justify-between gap-2 ${
-                        isCurrent
-                          ? 'bg-cyan-950/60 border-cyan-500/50 text-white shadow-sm'
-                          : 'bg-slate-950/70 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-950'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${isCurrent ? 'text-cyan-400' : 'text-emerald-400'}`} />
-                        <span className="truncate font-medium">{item.title}</span>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Bottom Status Ribbon */}
-        <div className="p-3.5 bg-slate-950 border-t border-slate-800 text-[11px] font-mono text-slate-500 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-cyan-400/90">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Echo Tutor Online</span>
+        {/* Scroll-to-bottom pill */}
+        {showScrollBtn && isOpen && (
+          <div className="absolute bottom-[72px] right-4">
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-slate-700 border border-slate-600 text-xs text-slate-300 hover:bg-slate-600 shadow-md transition-colors"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+              <span>Latest</span>
+            </button>
           </div>
-          <span>Cyber Awareness Mode</span>
+        )}
+
+        {/* Input bar */}
+        <div className="shrink-0 px-3 py-3 bg-[#161d2e] border-t border-slate-700/60">
+          <div className="flex items-center gap-2 bg-slate-800 rounded-xl border border-slate-700/60 focus-within:border-green-500/60 transition-colors px-3 py-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isEchoTyping ? 'Echo is typing…' : 'Ask Echo anything…'}
+              disabled={isEchoTyping}
+              aria-label="Message Echo"
+              className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none min-w-0 disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!input.trim() || isEchoTyping}
+              aria-label="Send message"
+              className="p-1.5 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors shrink-0"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-600 text-center mt-1.5">
+            Echo gives hints — not answers
+          </p>
         </div>
       </aside>
     </>
