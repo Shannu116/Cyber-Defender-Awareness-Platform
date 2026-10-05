@@ -1,15 +1,16 @@
 # Technical Architecture & Engineering Build Report
-## Microcare Cyber Defender — Cybersecurity Awareness Platform ("Cyber Aware 2026")
-**Slogan:** *"You are the Firewall"*
+## Microcare Cyber Aware 2026 — Cybersecurity Awareness Platform
+**Official Platform Slogan:** *“You are the Firewall”*
 
 ---
 
 ### Document Information
-- **Project Name:** Microcare Cyber Defender (Cyber Aware 2026)
+- **Project Name:** Microcare Cyber Aware 2026 (formerly Cyber Defender)
+- **Official Branding:** **Cyber Aware 2026**
 - **Author:** Engineering Team / Full-Stack Technical Lead
 - **Target Audience:** Technical Leadership, Engineering Management & Security Architects
-- **System Version:** 1.0.0 (Production Release)
-- **Primary Repository:** `Cyber-Defender-Awareness-Platform`
+- **System Version:** 2.1.0 (Production Release — Session Resumption, Privacy Guard & Adaptive Echo Engine)
+- **Primary Repository:** `cybesecurity-awareness-quizz` (`Cyber-Defender-Awareness-Platform`)
 - **Frontend URL:** Netlify Edge CDN Deployment
 - **Backend API URL:** `https://cyber-aware-api.onrender.com`
 - **Database Engine:** MongoDB Atlas Cloud Cluster (`cluster-microcare.gepmhm7.mongodb.net`)
@@ -19,55 +20,66 @@
 
 ## 1. Executive Summary & Purpose
 
-The **Microcare Cyber Defender Awareness Platform** is an enterprise-grade, simulation-driven training and evaluation system engineered to reinforce the human layer of cybersecurity across organizational departments.
+The **Microcare Cyber Aware 2026** platform is an enterprise-grade, simulation-driven training, evaluation, and session-resilience system engineered to reinforce the human layer of cybersecurity across organizational departments.
 
 Traditional annual cybersecurity training programs rely predominantly on passive multiple-choice questionnaires and video lectures. Industry data demonstrates that passive learning fails to establish behavioral deterrence against sophisticated social engineering threats such as Business Email Compromise (BEC), smishing, MFA fatigue, and quishing (QR code phishing).
 
-**Microcare Cyber Defender** replaces passive questionnaires with **ten high-fidelity, interactive simulation scenarios**. Employees actively triage weaponized artifacts—inspecting raw email RFC headers, dragging credentials into entropy buckets, detecting physical office clean-desk vulnerabilities, neutralizing MFA push floods, and orchestrating emergency incident responses in real time.
+**Cyber Aware 2026** replaces passive questionnaires with **ten high-fidelity, interactive simulation scenarios**. Employees actively triage weaponized artifacts—inspecting raw email RFC headers, dragging credentials into entropy buckets, detecting physical office clean-desk vulnerabilities, neutralizing MFA push floods, and orchestrating emergency incident responses in real time.
 
 ### Strategic Objectives
 1. **Active Behavioral Simulation:** Train employees using muscle memory and tactical decision-making rather than rote memorization.
-2. **Real-Time Automated Evaluation:** Evaluate employee aptitude across 5 critical security domains, providing instantaneous remedial guidance.
-3. **Enterprise Analytics & Audit Compliance:** Empower security administrators and compliance auditors (ISO/IEC 27001, SOC 2 Type II, HIPAA) with granular department telemetry, completion velocity, and vulnerability heatmaps.
-4. **High-Availability Cloud Architecture:** Deliver sub-100ms response times globally through an edge-cached single-page application (SPA), an autoscaling API layer, and an elastic cloud database cluster.
+2. **Resilient Session Lifecycle & Zero Data Loss:** Server-persisted session tracking (`QuizSession`) with per-challenge autosave, cryptographic device tokens, and 8-character cross-device resume codes.
+3. **Strict Case-Insensitive Identity & Retake Prevention:** Race-safe database uniqueness per department with intelligent casing normalization; completed participants are permanently locked to their certified records.
+4. **Adaptive Contextual Tutoring (Echo):** An interactive, TryHackMe-inspired AI security mentor featuring an animated ghost mascot, internal threat discovery checklist tracking, and progressive zero-spoiler hints.
+5. **Zero-Leakage Data Privacy:** Strict separation of authentication and reporting data; work emails are stored with `select: false` and are never exposed in UI views, API payloads, or CSV audit exports.
+6. **Enterprise Analytics & Audit Compliance:** Empower security administrators and compliance auditors (ISO/IEC 27001, SOC 2 Type II, HIPAA) with granular department telemetry, active in-progress session monitoring, single-participant session resets, and vulnerability heatmaps.
+7. **Full Dual-Theme Inversion:** Contrast-adaptive dark and light modes across all views (Learner UI, Echo Bot, and Admin Console).
 
 ---
 
 ## 2. High-Level System Architecture
 
-The platform is designed around a modern, decoupled **3-Tier Distributed Architecture**:
+The platform is designed around a modern, decoupled **3-Tier Distributed Architecture** enhanced with a stateful session engine:
 
 1. **Presentation & Simulation Tier (Frontend):** 
-   A high-performance Single Page Application (SPA) built using React 19 and TypeScript 6, styled with Tailwind CSS v4, and bundled with Vite 8. Deployed on **Netlify's Global Edge Network**.
+   A high-performance Single Page Application (SPA) built using React 19 and TypeScript 6, styled with Tailwind CSS v4, and bundled with Vite 8. Deployed on **Netlify's Global Edge Network**. Includes full dark/light theme switching, sound effects engine, and local session token synchronization (`cyber_defender_session`).
 2. **Application & Orchestration Tier (Backend API):**
-   A stateless REST API built on Node.js 24 and Express 5 (ECMAScript Module architecture), providing input evaluation, scoring algorithms, administrative session management, and telemetry aggregation. Hosted as a Web Service on **Render Cloud**.
+   A stateless REST API built on Node.js 24 and Express 5 (ECMAScript Module architecture), providing input evaluation, scoring algorithms, session autosave, administrative session management, and rate-limited identity endpoints. Hosted on **Render Cloud**.
 3. **Data Persistence & Resilience Tier (Database):**
-   A cloud-hosted managed replica set on **MongoDB Atlas** (`cluster-microcare`), featuring automated failover and indexing. Includes an autonomous in-memory MongoDB fallback engine to guarantee zero-downtime execution in restricted environments.
+   A cloud-hosted managed replica set on **MongoDB Atlas** (`cluster-microcare`), featuring compound unique indexes, automated failover, and connection pooling. Includes an autonomous in-memory MongoDB fallback engine (`MongoMemoryServer`) to guarantee zero-downtime execution in restricted environments.
 
 ```mermaid
 flowchart TD
     %% High-Level General Block Diagram
     subgraph ClientTier ["TIER 1: PRESENTATION & CLIENT LAYER (Netlify Edge CDN)"]
         UI_SPA["React 19 + TypeScript SPA (Vite 8)"]
+        NavbarUI["Navbar (Microcare Logo, Cyber Aware 2026, Sound, Theme)"]
         ModulesUI["Interactive Simulation Modules (10 Challenges)"]
-        AdminUI["Admin Analytics & Heatmap Dashboard"]
-        EchoUI["Echo AI Security Assistant"]
+        AdminUI["Security Awareness Admin Console"]
+        EchoUI["Echo Security Tutor (Animated Ghost Mascot & Hint Engine)"]
+        SessionHook["useSession Hook (Autosave & Device Token Sync)"]
         ProxyRouter["Netlify Edge Router & Reverse Proxy (/api/*)"]
         
+        UI_SPA --> NavbarUI
         UI_SPA --> ModulesUI
         UI_SPA --> AdminUI
         UI_SPA --> EchoUI
+        UI_SPA --> SessionHook
         UI_SPA --> ProxyRouter
     end
 
     subgraph ApiTier ["TIER 2: APPLICATION & ORCHESTRATION LAYER (Render Cloud Container)"]
         ExpressApp["Express 5 REST API Engine (Node.js 24)"]
+        RateLimiter["express-rate-limit (Brute-Force Guard)"]
         AuthMiddleware["JWT Authentication & RBAC Guard"]
+        SessionRoutes["Session Engine (/api/session/*)"]
         ScoringEngine["Evaluation & Level Assignment Engine"]
         SeedEngine["Auto-Seeding & Schema Sync Engine"]
         
         ProxyRouter -- "HTTPS / TLS 1.3" --> ExpressApp
+        ExpressApp --> RateLimiter
         ExpressApp --> AuthMiddleware
+        ExpressApp --> SessionRoutes
         ExpressApp --> ScoringEngine
         ExpressApp --> SeedEngine
     end
@@ -76,7 +88,8 @@ flowchart TD
         AtlasCluster[("MongoDB Atlas Cloud Replica Set\n(cluster-microcare / cyber_defender)")]
         LocalFallback[("In-Memory MongoDB Fallback Engine\n(Auto-Failover Resilience)")]
         
-        ScoringEngine -- "Mongoose ODM (mongodb+srv://)" --> AtlasCluster
+        SessionRoutes -- "QuizSession (Unique nameKey + dept)" --> AtlasCluster
+        ScoringEngine -- "QuizAttempt (select:false email)" --> AtlasCluster
         AtlasCluster -. "On Network Isolation / Egress Timeout" .-> LocalFallback
     end
 
@@ -95,441 +108,276 @@ flowchart TD
 
 | Layer | Component | Version | Rationale & Architectural Benefit |
 | :--- | :--- | :--- | :--- |
-| **Frontend Framework** | React | `19.2.8` | Latest React concurrent rendering engine; zero memory leaks during rapid simulation transitions; declarative state hooks. |
-| **Type Safety** | TypeScript | `6.0.2` | Comprehensive type contracts across challenge states, user actions, payload schemas, and API responses. |
+| **Frontend Framework** | React | `19.2.8` | Concurrent rendering engine; declarative state hooks; zero memory leaks during rapid scenario transitions. |
+| **Type Safety** | TypeScript | `6.0.2` | Comprehensive type contracts for session state (`QuizSessionData`, `SessionResumeResponse`), challenge payloads, and API interfaces. |
 | **Build Tooling** | Vite | `8.3.0` | Sub-second Hot Module Replacement (HMR) and optimized Rollup tree-shaking producing minimal production bundles. |
-| **Styling & Design** | Tailwind CSS | `4.3.3` | Next-generation engine (`@tailwindcss/vite`); utility-first zero-runtime CSS bundle with responsive dark-mode cyber aesthetics. |
+| **Styling & Design** | Tailwind CSS | `4.3.3` | Next-generation engine (`@tailwindcss/vite`); utility-first design system with inverted slate scale for seamless dark & light mode contrast. |
 | **Iconography** | Lucide React | `1.49.0` | Tree-shakeable, clean SVGs for security indicators, attack vectors, and terminal consoles. |
-| **UX Celebrations** | Canvas Confetti | `1.9.4` | Hardware-accelerated client-side particle canvas for positive psychological reinforcement upon scenario completion. |
+| **Vector Animation** | Custom Inline SVG + CSS3 | Hardware Accel. | Zero-dependency CSS keyframe animations for the 3D-floating Echo ghost mascot (`echoFloat3D`, `echoCapeWave`, `echoGlowPulse`). |
+| **UX Celebrations** | Canvas Confetti | `1.9.4` | Hardware-accelerated client-side particle canvas for positive psychological reinforcement upon completion. |
 | **Backend Runtime** | Node.js | `24.21.0` | Latest LTS engine featuring native fetch, V8 optimizations, and modern ES Module support (`"type": "module"`). |
-| **API Framework** | Express | `5.2.1` | Express 5 with native Promise error propagation, optimized routing algorithms, and robust middleware pipelines. |
-| **Database ODM** | Mongoose | `9.10.3` | Strict schema validation, automatic connection pooling, typed models, and MongoDB aggregation pipeline helpers. |
+| **API Framework** | Express | `5.2.1` | Native Promise error propagation, optimized routing algorithms, and robust middleware pipelines. |
+| **Rate Limiting** | Express Rate Limit | `7.5.0` | IP-based rate limiting on sensitive `/api/session/start` and `/api/session/resume` endpoints to block name enumeration. |
+| **Database ODM** | Mongoose | `9.10.3` | Compound unique indexing, `select: false` privacy enforcement, schema validation, and aggregation pipelines. |
 | **Database Driver** | MongoDB Native Driver | `6.14.0` | Low-latency binary wire protocol connection with replica set management. |
 | **Resilience Engine** | MongoMemoryServer | `11.3.0` | Ephemeral in-memory database fallback to ensure system operability even if cloud network partitions occur. |
 | **Security & Auth** | JSON Web Tokens (`jsonwebtoken`) | `9.0.3` | Cryptographically signed, stateless Bearer tokens (HS256) for administrator endpoints with 8-hour TTL. |
 | **Password Hashing** | Bcrypt.js | `3.0.3` | Salted one-way hashing with cost factor 10 to protect administrative credentials against rainbow table attacks. |
-| **Edge CDN** | Netlify | Edge Network | Global HTTP/3 CDN with zero-latency edge distribution and transparent API reverse proxying. |
+| **Crypto Utilities** | Node.js Native `crypto` | Built-in | Cryptographic 256-bit device token generation, SHA-256 token hashing, and unambiguous 8-char resume codes. |
+| **Edge CDN** | Netlify | Edge Network | Global HTTP/3 CDN with zero-latency edge distribution and transparent API reverse proxying (`/api/*`). |
 | **Cloud Computing** | Render | Docker/Container | Zero-configuration continuous deployment linked to Git VCS with automatic health checking and port binding. |
-| **Cloud Database** | MongoDB Atlas | AWS us-east | Multi-AZ replica set with automated backups, monitoring, and IP-based access control lists (ACL). |
+| **Cloud Database** | MongoDB Atlas | AWS us-east | Multi-AZ replica set with automated backups, monitoring, and IP-based access control lists (0.0.0.0/0 egress allowance). |
 
 ---
 
-## 4. Detailed Technical Architecture & Dataflow
+## 4. Platform Data Collection & Storage Specification
 
-The diagram below maps every protocol, endpoint, reverse-proxy rewrite rule, authentication checkpoint, and database model query executing across the platform:
+### 4.1 Data Collected from the User (Input Layer)
 
-```mermaid
-flowchart LR
-    %% Detailed Technical Diagram
-    subgraph Browser ["USER BROWSER / CLIENT"]
-        ViteApp["Vite + React SPA Application\n(Local Storage / Memory State)"]
-        TokenStore[("SessionStorage:\n'cyber_defender_admin_token'")]
-    end
+The platform intentionally minimizes data collection to protect employee privacy while ensuring test integrity:
 
-    subgraph NetlifyEdge ["NETLIFY EDGE PROXY LAYER"]
-        direction TB
-        SPARule["Redirect Rule: /* -> /index.html (200)"]
-        ProxyRule["Proxy Rule: /api/* ->\nhttps://cyber-aware-api.onrender.com/api/:splat (200!)"]
-    end
+| Field Name | Collection Screen | Mandatory? | Validation Rules & Constraints | Purpose & Handling |
+| :--- | :--- | :--- | :--- | :--- |
+| **Full Name** (`name`) | Welcome Screen Registration | **Yes** (`*`) | 2–60 chars, Unicode letters (`\p{L}`), spaces, dots, apostrophes, hyphens. | Identifies participant. Normalized to `nameKey` for uniqueness; original casing preserved for display. |
+| **Department** (`department`) | Welcome Screen Registration | **Yes** (`*`) | Must match 1 of 9 canonical departments from `DEPARTMENTS`. | Organizes training metrics; scopes name uniqueness per department. |
+| **Work Email** (`email`) | Welcome Screen Registration | **No** (Optional) | Max 254 chars, RFC-compliant format (`[^\s@]+@[^\s@]+\.[^\s@]+`). | **Session recovery only.** Marked `select: false` in DB. Never shown on screen, never exported. Helper text: *"Only used to help you resume your test. Never shown on screen."* |
+| **Resume Credentials** | Resume Modal | **Yes** (to resume) | Name + Department + 8-char Code (`XXXX-XXXX`) OR Work Email. | Validates authorization to resume an active in-progress session on a new browser/device. |
+| **Challenge Answers** (`answers`) | During Challenge Triage | **Yes** (per step) | Serialized answer payload (clicked hotspots, SMS decisions, entropy buckets, etc.). | Evaluates employee security aptitude; autosaved per challenge via `PUT /api/session/:id/answer`. |
+| **Time Spent** | Background Timer | Automatic | Seconds spent active on current challenge. | Calculates active engagement velocity; pauses when browser tab is inactive. |
 
-    subgraph RenderContainer ["RENDER WEB SERVICE (Node.js 24 / Express 5)"]
-        direction TB
-        PortBind["Port Listener: process.env.PORT || 10000"]
-        CorsMW["CORS Middleware (allow credentials)"]
-        JsonMW["express.json() Body Parser"]
-
-        subgraph Routes ["REST API Route Endpoints"]
-            HCheck["GET /api/health"]
-            GetQ["GET /api/questions"]
-            WeakQ["GET /api/questions/weak-areas"]
-            SubQuiz["POST /api/quiz/submit"]
-            AdminLogin["POST /api/admin/login"]
-            AdminMe["GET /api/admin/me (Protected)"]
-            AdminStats["GET /api/admin/stats (Protected)"]
-            AdminAttempts["GET /api/admin/attempts (Protected)"]
-            ResetDemo["POST /api/admin/reset-demo (Protected)"]
-        end
-
-        AuthMW{"requireAdminAuth\nJWT Verification\nHeader: 'Bearer <token>'"}
-        GradeFn["Evaluate Answers &\nCompute Category Breakdown"]
-        StatsAgg["MongoDB Aggregation Pipeline\n($group, $avg, $count)"]
-    end
-
-    subgraph AtlasCluster ["MONGODB ATLAS CLUSTER (Cloud Replica Set)"]
-        direction TB
-        DBConn["URI: mongodb+srv://cluster-microcare.gepmhm7.mongodb.net/cyber_defender"]
-        CollQ[("Collection: questions\n(10 Synced Challenges)")]
-        CollAttempts[("Collection: quizattempts\n(Employee Submissions & Telemetry)")]
-        CollAdmin[("Collection: adminusers\n(Salted Hashed Credentials)")]
-    end
-
-    %% Browser to Netlify
-    ViteApp -- "1. Static Asset Request" --> SPARule
-    ViteApp -- "2. API Requests: /api/..." --> ProxyRule
-    TokenStore -. "JWT Bearer Token" .-> ViteApp
-
-    %% Netlify to Render
-    ProxyRule -- "3. HTTPS Forward (Preserved URI Splat)" --> PortBind
-    PortBind --> CorsMW --> JsonMW
-
-    %% Routing Flow
-    JsonMW --> HCheck
-    JsonMW --> GetQ
-    JsonMW --> WeakQ
-    JsonMW --> SubQuiz
-    JsonMW --> AdminLogin
-    JsonMW --> AuthMW
-
-    AuthMW -- "Valid Token" --> AdminMe
-    AuthMW -- "Valid Token" --> AdminStats
-    AuthMW -- "Valid Token" --> AdminAttempts
-    AuthMW -- "Valid Token" --> ResetDemo
-
-    %% Logic to DB Flow
-    GetQ --> CollQ
-    WeakQ --> CollQ
-    SubQuiz --> GradeFn --> CollAttempts
-    AdminLogin -- "Validate Hash (bcrypt.compare)" --> CollAdmin
-    AdminStats --> StatsAgg --> CollAttempts
-    AdminAttempts --> CollAttempts
-```
+#### Canonical Corporate Departments
+All user registrations and analytics are organized around 9 centralized business departments:
+1. `Operations` (Default)
+2. `Finance & Accounting`
+3. `Human Resources`
+4. `Sales & Marketing`
+5. `Customer Support`
+6. `Legal & Compliance`
+7. `IT & Engineering`
+8. `Executive & Management`
+9. `General Staff`
 
 ---
 
-## 5. Core Functional Modules
+### 4.2 Data Stored in Database & Local Client (Storage Layer)
 
-### 5.1 Interactive Simulation & Challenge Engine (10 Modules)
-The core learning engine is composed of 10 modular, state-driven security challenges covering all primary cyber attack surfaces:
+The system persists data across two MongoDB collections and client storage tiers:
 
-```
-[1] Email Investigation ────> Spot spoofed SPF/DKIM & fake tracking links
-[2] Investigate Message  ────> Triage multi-channel SMS urgent smishing attacks
-[3] Verify the Boss     ────> Out-of-band verification against BEC CEO fraud
-[4] MFA Alert Storm     ────> Deny push flood fatigue & trigger password reset
-[5] Password Challenge  ────> Build high-entropy multi-word passphrases
-[6] Office Incident     ────> Physical clean desk, rogue USBs, & tailgating
-[7] QR Code Inspection  ────> Detect quishing domain spoofs before scanning
-[8] Secure the Laptop   ────> Coffee-shop Wi-Fi defense: VPN & DNS encryption
-[9] You Clicked It      ────> Post-compromise blameless rapid incident response
-[10] Workday Timeline   ────> Full workday chronological threat triage
-```
+#### 1. In `QuizSession` Collection (`models/QuizSession.js`)
+Tracks the real-time lifecycle of an active or completed evaluation:
+- `nameKey` *(String, indexed)*: Lowercase, trimmed, diacritic-stripped normalized string (e.g., `"red criminal"`).
+- `participantName` *(String)*: User's typed name preserving original casing (e.g., `"Red Criminal"`).
+- `department` *(String)*: Selected corporate department.
+- `email` *(String, select: false)*: Work email address. **Excluded from all query projections by default.**
+- `status` *(String, enum)*: `'in_progress'` during test, updated to `'completed'` upon final submission.
+- `questionIds` *(Array of Strings)*: Snapshot order of questions for this session.
+- `currentIndex` *(Number)*: Current active challenge index (0 to 9).
+- `answers` *(Array of Objects)*: Autosaved answers containing `questionId`, `userResponse`, `timeSpentSeconds`, and `answeredAt`.
+- `activeSeconds` *(Number)*: Total cumulative active time spent interacting with the platform.
+- `resumeCode` *(String, indexed)*: Unambiguous 8-character uppercase alphanumeric code with hyphen (e.g., `K7M2-QX4P`, alphabet excludes `0`, `O`, `1`, `I`).
+- `deviceTokenHash` *(String, indexed)*: SHA-256 hash of the 256-bit random cryptographic device token.
+- `startedAt` & `lastActivityAt` *(Dates)*: Activity timestamps for abandonment tracking and analytics.
+- `attemptId` *(ObjectId, ref: QuizAttempt)*: Links to the certified attempt record once completed.
+- **Compound Unique Index:** `{ nameKey: 1, department: 1 }` strictly enforces one session per person per department.
 
-1. **The Email Investigation (`email_investigation`):**
-   - **Scenario:** High-urgency shipping delivery notification claiming an impending delivery failure.
-   - **Mechanism:** Interactive hotspot inspection. Learners must click on raw message artifacts: the forged sender address (`service@fedx-tracking-support.com`), fake tracking hyperlink pointing to an external credential harvesting IP, and generic greeting.
-   - **Grading:** Points awarded per correctly identified indicator with bonus points for zero false positives.
+#### 2. In `QuizAttempt` Collection (`models/QuizAttempt.js`)
+Stores certified historical records of completed tests:
+- `participantName` *(String)*: Participant name.
+- `department` *(String)*: Department.
+- `email` *(String, select: false)*: Work email copied from session with `select: false` privacy lock.
+- `score` *(Number)*: Final score (0–1000 base, up to 1250 with precision bonuses).
+- `maxScore` *(Number, default: 1000)*: Theoretical maximum baseline.
+- `percentage` *(Number)*: Accuracy percentage.
+- `level` *(String, enum)*: Gamification tier (`Needs Practice`, `Security Aware`, `Cyber Defender`, `Cyber Champion`).
+- `completionTimeSeconds` *(Number)*: Total elapsed completion duration.
+- `completed` *(Boolean, default: true)*: Completion flag.
+- `answers` *(Array of AnswerSchema)*: Complete snapshot of submitted answers.
+- `categoryBreakdown` *(Object)*: Individual score, maxScore, and percentage across the 5 security domains.
+- `recommendations` *(Array of Strings)*: Algorithmically generated coaching tips for categories under 80%.
+- `isPracticeQuiz` *(Boolean, default: false)*: Flags whether the attempt was a practice run.
+- `sessionId` *(ObjectId, ref: QuizSession)*: Links back to the source session record.
 
-2. **Investigate the Message (`message_investigate`):**
-   - **Scenario:** Mobile interface presenting four distinct SMS and instant messaging alerts.
-   - **Mechanism:** Multi-item classification interface. Learners evaluate banking alerts, one-time passwords, HR policy updates, and package notices, classifying each as either *Legitimate* or *Phishing/Smishing*.
-
-3. **Verify the Boss (`chat_decision`):**
-   - **Scenario:** Urgent, out-of-channel direct message purportedly from the company Chief Executive requesting an immediate wire transfer or gift card purchase for a confidential acquisition.
-   - **Mechanism:** Branching conversational decision tree. The learner is pressured with artificial urgency and must enforce corporate out-of-band verification protocols rather than complying.
-
-4. **MFA Notification Storm (`mfa_alert`):**
-   - **Scenario:** Push notification spamming on an employee smartphone at 2:14 AM (MFA fatigue / prompt bombing).
-   - **Mechanism:** Time-critical alert UI. Demonstrates that tapping "Deny" is only step one; the employee must immediately access corporate identity security to invalidate existing active sessions and initiate an urgent password reset.
-
-5. **The Password Challenge (`drag_drop`):**
-   - **Scenario:** Interactive credential builder demonstrating entropy fundamentals.
-   - **Mechanism:** Drag-and-drop bucket classifier. Demonstrates that short complex passwords (e.g., `P@$$w0rd!`) possess significantly lower cracking resistance than 4-word random passphrases (e.g., `correct-horse-battery-staple`).
-
-6. **The Office Incident (`office_incident`):**
-   - **Scenario:** Visual inspection of an enterprise workstation and reception area.
-   - **Mechanism:** Spotting physical security vulnerabilities: an unlocked computer workstation, confidential payroll documents sitting on an unattended printer, a sticky note with credentials attached to a monitor, and an unknown USB drive left on a breakroom table.
-
-7. **Inspect Before You Scan (`qr_inspect`):**
-   - **Scenario:** QR code stickers affixed over cafeteria payment terminals and corporate parking flyers.
-   - **Mechanism:** URL decoding simulator. Learners inspect the decoded destination URL for typosquatting (`pay-micr0care.com` vs. `pay.microcare.com`) before blindly trusting mobile camera redirects.
-
-8. **Secure the Laptop (`laptop_security`):**
-   - **Scenario:** Employee logging on from a public airport Wi-Fi hotspot (`Airport_Free_HighSpeed`).
-   - **Mechanism:** Threat mitigation checklist. Learners configure corporate VPN tunneling, disable automatic file sharing, verify HTTPS certificate chains, and disable automatic network reconnect.
-
-9. **You Clicked It — Incident Toolbox (`incident_toolbox`):**
-   - **Scenario:** The employee realizes they accidentally entered credentials into an unauthorized portal.
-   - **Mechanism:** Incident response workflow. Teaches the corporate policy of *blameless, immediate reporting*: disconnecting the network cable/Wi-Fi to prevent lateral malware movement, notifying the SOC/IT Security team immediately, and never attempting to conceal the mistake.
-
-10. **A Day at Work — Workday Timeline (`workday_timeline`):**
-    - **Scenario:** Chronological journey through an 8-hour workday encountering 5 situational events.
-    - **Mechanism:** Real-time triage across morning coffee Wi-Fi, morning emails, midday lunch deliveries, afternoon client files, and evening logout routines.
+#### 3. Client Storage (`localStorage` & `sessionStorage`)
+- `localStorage['cyber_defender_session']`: JSON payload containing `{ sessionId, deviceToken }` for automatic same-browser session restoration across reloads.
+- `sessionStorage['cyber_defender_admin_token']`: HS256-signed JWT token for authenticated administrator sessions.
 
 ---
 
-### 5.2 Real-Time Evaluation & Scoring Engine
-The backend implements a transparent, deterministic scoring system:
+## 5. UI Architecture & View Specifications
 
-$$\text{Total Score} = \sum_{i=1}^{10} \Big( \text{BaseScore}_i + \text{BonusScore}_i \Big)$$
+The user interface follows a modern, responsive design system built around the official brand **Cyber Aware 2026**:
 
-- **Base Score:** 100 points per challenge (1,000 points baseline).
-- **Speed & Precision Bonus:** Up to 25 bonus points per challenge for flawless first-attempt detection and zero false positives (1,250 points theoretical maximum).
-- **Category Taxonomy:** Performance is tracked independently across 5 competencies:
-  1. Phishing Detection
-  2. Social Engineering
-  3. Password Safety
-  4. Incident Response
-  5. Remote Work Safety
+### 5.1 Persistent Navbar (`components/Navbar.tsx`)
+- **Brand Identity:** Top-left header showcases the **Microcare** corporate logo (`/microcare-logo.jpg`) encased in a crisp rounded badge, followed by the gradient title **Cyber Aware 2026** (`from-white via-cyan-100 to-cyan-400`).
+- **Mode Indicator:** Displays a purple pill badge (`Practice Mode`) when an employee is exploring scenarios without impacting official records.
+- **Progress Gauge:** Dynamic percentage bar indicating active completion during the quiz (e.g., `Challenge 3 of 10 — 30%`).
+- **Interactive Controls:**
+  - Sound Effects toggle (`Volume2` / `VolumeX`) controlling audio feedback.
+  - Theme toggle (`Sun` / `Moon`) switching between Dark Mode and Light Mode.
+  - Admin Portal link (`Lock`) in footer and navbar for security leadership login.
 
-#### Automated Competency Badge Hierarchy
+### 5.2 Welcome & Registration View (`components/WelcomeScreen.tsx`)
+- **Hero Display:** Ambient cyan glow effect with the headline **Cyber Aware 2026** and the slogan **“You are the Firewall”**.
+- **Context Pill:** Tagline badge reading `Interactive Cybersecurity Awareness Experience`.
+- **Metrics Badges:**
+  - *Estimated Time:* `8–10 Minutes` (Clock icon)
+  - *Challenges:* `10 Missions` (Target icon)
+  - *Difficulty:* `Beginner Friendly` (UserCheck icon)
+- **Participant Registration Card:**
+  - `Full Name *`: Text input with live validation.
+  - `Department *`: Dropdown with 9 corporate departments.
+  - `Work Email`: Clean optional field with privacy explanation: *"Only used to help you resume your test. Never shown on screen."*
+  - `Start Mission`: Gradient CTA button with loading spinner state.
+- **In-Progress Duplicate Banner:** When a participant already has an active session, a cyan card offers a 1-click **Resume Your Test** button.
+- **Completed Test Results & Lock Banner:** When a participant has already completed their test, an emerald card confirms: **Test Already Completed — You have already completed your cybersecurity awareness test. Retakes are not permitted.** A direct CTA button (**“View Your Results & Certificate”**) allows the defender to immediately access their official results, category breakdown, and leaderboard standing without administrative assistance.
+- **Cross-Device Resume Modal:** Clean dialog allowing users on a different phone or laptop to enter Name + Department + Code/Email to resume an active session or view certified results.
+
+### 5.3 Echo AI Security Tutor (`components/EchoTutorTab.tsx`)
+- **Animated Ghost Mascot:** Custom CSS-animated vector mascot based on the green hooded ghost blueprint:
+  - Lime-green hooded cloak (`#7ce011`) with top tip curling to the left.
+  - Black face cavity (`#0c0f0a`) housing two glowing white vertical oval eyes.
+  - Wavy trailing cape with inner shadow depth.
+  - Animations: `echoFloat3D` (floating bob), `echoCapeWave` (cape sway), `echoGlowPulse` (pulse ring).
+- **Trigger Button:** Bottom-right floating pill with online indicator dot and unread badge.
+- **Chat Drawer:** Sliding panel with conversational message bubbles (Echo left, User right), animated typing indicator, Enter-to-send input bar, and clear history button.
+- **Internal Threat Checklist:** Each challenge mounts expected red flags via `registerChecklist`. The checklist remains **internal** (hidden from learners) to avoid giving away how many threats exist.
+- **Progressive Hint Engine:** When the user types `"hint"`, `"help"`, `"stuck"`, or `"?"`, Echo analyzes what hasn't been found and dispenses **one hint at a time** for the next threat without spoiling the answer.
+- **Challenge Transition Auto-Reset:** When moving from Challenge 1 to Challenge 2 (`currentQuestionIndex` advances), Echo automatically clears chat history and findings, starting fresh.
+
+### 5.4 Simulation Challenges (10 Modules)
 ```
-  Score >= 850  ───>  [ Cyber Champion ]   (Exemplary Security Posture)
-  Score >= 700  ───>  [ Cyber Defender ]   (Solid Enterprise Defense)
-  Score >= 400  ───>  [ Security Aware ]   (Basic Foundations Present)
-  Score <  400  ───>  [ Needs Practice ]   (Targeted Training Required)
+[1] The Email Investigation ────> Spot spoofed SPF/DKIM & fake tracking links
+[2] Investigate the Message ────> Triage multi-channel SMS urgent smishing attacks
+[3] Verify the Boss         ────> Out-of-band verification against BEC CEO fraud
+[4] MFA Notification Storm  ────> Deny push flood fatigue & trigger password reset
+[5] The Password Challenge  ────> Build high-entropy multi-word passphrases
+[6] The Office Incident     ────> Physical clean desk, rogue USBs, & tailgating
+[7] Inspect Before You Scan ────> Detect quishing domain spoofs before scanning
+[8] Secure the Laptop       ────> Coffee-shop Wi-Fi defense: VPN & DNS encryption
+[9] You Clicked It          ────> Post-compromise blameless rapid incident response
+[10] A Day at Work          ────> Full workday chronological threat triage
 ```
 
-The algorithm parses category scores and generates personalized remedial guidance:
-```javascript
-// Sample Evaluation Logic from server/index.js
-if (phishingPct < 80) {
-  recommendations.push("Double-check sender email addresses and inspect links before clicking on urgent account alerts.");
-}
-if (socialEngPct < 80) {
-  recommendations.push("Remember: unexpected urgency is a primary social engineering tactic. Always pause and verify out-of-band.");
-}
-```
+### 5.5 Results & Certification View (`components/ResultsScreen.tsx`)
+- **Confetti Celebration:** Canvas confetti bursts upon achieving score ≥ 500.
+- **Top Header Banner:** **YOUR CYBER AWARE 2026 RESULTS** displaying participant name and department.
+- **Responsive Two-Column Split Architecture:**
+  - **Left Column (User Results & Remediation - 7 cols on lg):**
+    - *Numerical Score Card:* Displays `score / 1000` with overall accuracy percentage.
+    - *Gamification Level Badge:* Visual tier badge (`Cyber Champion`, `Cyber Defender`, `Security Aware`, `Needs Practice`).
+    - *Category Performance Breakdown:* 5 security domain progress bars with accuracy percentages and animated gradients.
+    - *Personalized Learning Recommendations:* Tailored checklist of remediation coaching tips.
+    - *Action Buttons:* Practice mode retake and remediation focus filters.
+  - **Right Column (Live Leaderboard & Hacker Titles - 5 cols on lg):**
+    - *Personal Standing Spotlight Box:* Highlighted user card summarizing their exact Rank (`#X`), Score, and earned Cyber Meme Title.
+    - *Cyber Defender Leaderboard Table:* Real-time rankings with crown (`👑 #1`), silver/bronze medal badges (`🥈 #2`, `🥉 #3`), participant identity, corporate department, score & accuracy %, and funny cybersecurity meme/hacker titles.
+    - *Current User Row Highlighting:* Active defender is highlighted with a cyan glow background, border accent, and `YOU` badge.
+    - *Cybersecurity Meme / Hacker Titles:* Humorous, tier-based meme designations seeded deterministically by username:
+      - **Top Tier (900–1000 pts):** *"The 1337 H4x0r 🕶️"*, *"Chief Firewall Whisperer 👑"*, *"Zero-Day Slayer 🛡️"*, *"Master of the Cyber Realm ⚡"*, *"Kernel Panic Survivor 💻"*
+      - **High Tier (750–899 pts):** *"Phish Net Master 🎣"*, *"Password: Not Hunter2 🔑"*, *"Packet Sniffer Extraordinaire 📡"*, *"Sudo Make Me A Sandwich 🥪"*, *"Certified Cyber Ninja 🥷"*
+      - **Mid Tier (550–749 pts):** *"Incognito Mode Enjoyer 🕵️"*, *"Ctrl+Alt+Defend ⌨️"*, *"Two-Factor Authenticated Human 📱"*, *"VPN Always On 🌐"*, *"Spam Folder Archaeologist 📂"*
+      - **Developing Tier (< 550 pts):** *"Plugged in the Mystery USB Drive 🔌"*, *"Clicked the Nigerian Prince Email 👑"*, *"Password123! Enthusiast 📝"*, *"Post-it Note Password Keeper 🗒️"*, *"Thought HTTPS meant Super Secure 🌐"*
+
+### 5.6 Security Awareness Admin Console (`components/AdminDashboard.tsx`)
+- **Header:** **Security Awareness Admin Console** with logged-in admin badge.
+- **Top 6 KPI Cards:** Total Participants, In-Progress Active Sessions, Average Score, Completion Rate, Average Completion Time, Most Commonly Missed Question.
+- **Visual Analytics:** Category Accuracy Performance bar chart and Awareness Level Distribution card.
+- **Active In-Progress Sessions Table:** Real-time list of active sessions with participant name, department, current challenge index, answers logged, active time, last activity, and a single-click **Reset** action button.
+- **Live MongoDB Attempts Table:** Searchable list of completed employee records with score, level, duration, date, inspection modal, and delete button.
+- **CSV Audit Export:** One-click CSV export generating compliance-ready audit spreadsheets.
 
 ---
 
-### 5.3 Echo AI Security Assistant & Contextual Tutor
-The platform includes **Echo**, an embedded contextual security guide accessible during any challenge:
-- **Zero-Spoiler Hints:** Provides progressive hints that encourage users to analyze attack vectors rather than revealing the correct answer.
-- **Micro-Briefings:** Explains the real-world consequences of specific threats (e.g., explaining why MFA fatigue attacks work and how threat actors execute them).
-- **Interactive Debrief:** Congratulates users on correct analyses and gently explains why incorrect choices pose risks to the enterprise.
+## 6. Dual-Theme Light & Dark Mode Engine
 
----
+The platform implements an inverted token system via custom properties in `client/src/index.css`:
 
-### 5.4 Enterprise Administrative Analytics Console
-Accessible via `/admin`, the administrative console provides management with real-time compliance oversight:
-- **Authentication:** Protected by stateless JSON Web Tokens (JWT) signed with a secure server secret and validated by `requireAdminAuth` middleware.
-- **MongoDB Aggregation Telemetry:** Computes metrics directly in the database engine using pipeline stages (`$match`, `$group`, `$avg`):
-  - Total participants and department completion rates.
-  - Overall organization average score and percentage.
-  - Mean completion duration (minutes and seconds).
-  - Most commonly missed question (e.g., *"The Email Investigation (28% miss rate)"*).
-  - Performance distributions by category and badge tier.
-- **Audit Table & Export:** Real-time log of every employee attempt, score breakdown, department, and timestamp, with **One-Click CSV Export** for corporate audit logs.
-
----
-
-## 6. Cloud Deployment Architecture & Connectivity
-
-The production deployment eliminates single-origin bottlenecks by distributing responsibilities across three specialized cloud services:
-
-```
-+-------------------------------------------------------------------------------+
-|                             NETLIFY EDGE NETWORK                              |
-|   - Base Directory: client                                                    |
-|   - Build Command: npm run build                                              |
-|   - Publish Directory: dist                                                   |
-|   - Reverse Proxy: /api/* -> https://cyber-aware-api.onrender.com/api/:splat  |
-+---------------------------------------+---------------------------------------+
-                                        | HTTPS / TLS 1.3
-                                        v
-+-------------------------------------------------------------------------------+
-|                           RENDER CLOUD WEB SERVICE                            |
-|   - Service: cyber-aware-api.onrender.com                                     |
-|   - Environment: Node.js 24 | Linux Container                                 |
-|   - Start Command: node index.js                                              |
-|   - Port Binding: 10000 (Dynamic process.env.PORT)                           |
-+---------------------------------------+---------------------------------------+
-                                        | MongoDB Wire Protocol (TCP 27017)
-                                        v
-+-------------------------------------------------------------------------------+
-|                         MONGODB ATLAS MANAGED CLUSTER                         |
-|   - Cluster: cluster-microcare.gepmhm7.mongodb.net                            |
-|   - Database: cyber_defender                                                  |
-|   - Network Whitelist: 0.0.0.0/0 (Egress Access from Render Cloud)            |
-+-------------------------------------------------------------------------------+
-```
-
-### 6.1 Netlify Edge Configuration (`netlify.toml`)
-Netlify acts as both the static file host and an intelligent edge reverse proxy:
-
-```toml
-[build]
-  base = "client"
-  command = "npm run build"
-  publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps"
-  SECRETS_SCAN_OMIT_KEYS = "PORT,MONGODB_URI,JWT_SECRET"
-  SECRETS_SCAN_ENABLED = "false"
-
-# Transparent API Proxy: Prevents CORS Preflight Overhead
-[[redirects]]
-  from = "/api/*"
-  to = "https://cyber-aware-api.onrender.com/api/:splat"
-  status = 200
-  force = true
-
-# SPA Fallback Routing
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
-
-**Key Technical Advantage:** Because Netlify proxies `/api/*` requests with a status `200` rewrite, the browser perceives all API communications as same-origin (`/api/quiz/submit`). This eliminates Cross-Origin Resource Sharing (CORS) preflight `OPTIONS` handshakes, reducing API latency by ~100–180ms per interaction.
-
-### 6.2 Render API Web Service Configuration
-- **Repository Root:** Connected directly to GitHub repository `Cyber-Defender-Awareness-Platform`.
-- **Runtime:** Node.js v24.21.0.
-- **Port Handling:** Automatically reads `process.env.PORT` provided by Render's container orchestrator (configured to port 10000) and binds Express gracefully:
-  ```javascript
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`[Cyber Defender API] Running on port ${PORT}`);
-  });
-  ```
-- **Monorepo Architecture:** The application provides a standalone `server/package.json` and a root `package.json` with dedicated build and start targets, ensuring Render can build and execute the backend regardless of working directory configuration.
-
-### 6.3 MongoDB Atlas Cloud Configuration
-- **Cluster Connection String:** 
-  `mongodb+srv://<username>:<password>@cluster-microcare.gepmhm7.mongodb.net/cyber_defender?retryWrites=true&w=majority&appName=Cluster-microcare`
-- **Network Access Rule:** Configured with `0.0.0.0/0` (Anywhere) to allow dynamic egress IP addresses allocated across Render's autoscaling Linux container fleet.
-- **Connection Logic (`server/db.js`):**
-  Uses Mongoose 9 with connection pool management and a 10-second timeout guard:
-  ```javascript
-  await mongoose.connect(uri, {
-    dbName: 'cyber_defender',
-    serverSelectionTimeoutMS: 10000,
-  });
-  ```
-- **Resilience Engine:** If an egress firewall or transient network issue prevents cloud cluster communication, the system autonomously starts a local `MongoMemoryServer` instance in-memory, ensuring that user training sessions never encounter an unhandled server crash.
-
----
-
-## 7. Data Models & API Specifications
-
-### 7.1 Database Schemas
-
-#### 1. Question Schema (`models/Question.js`)
-Stores the canonical definition of each simulation challenge:
-```json
-{
-  "id": "email_investigation",
-  "order": 1,
-  "title": "The Email Investigation",
-  "category": "Phishing Detection",
-  "questionType": "hotspot",
-  "points": 100,
-  "bonusPoints": 25,
-  "details": {
-    "sender": "Federal Express Support <service@fedx-tracking-support.com>",
-    "subject": "ACTION REQUIRED: Delivery Failed - Package #US-884920",
-    "hotspots": [
-      { "id": "sender_domain", "text": "@fedx-tracking-support.com", "isVulnerability": true },
-      { "id": "generic_greeting", "text": "Dear Valued Customer,", "isVulnerability": true },
-      { "id": "malicious_link", "text": "http://192.168.1.45/tracking/login.php", "isVulnerability": true }
-    ]
-  }
+```css
+html.light, [data-theme="light"], body.light {
+  color-scheme: light;
+  --color-slate-950: #f8fafc; /* Main Canvas Background (slate-50) */
+  --color-slate-900: #ffffff; /* Card & Panel Surfaces (Pure White) */
+  --color-slate-850: #f1f5f9; /* Inset Container (slate-100) */
+  --color-slate-800: #e2e8f0; /* Card Borders & Dividers (slate-200) */
+  --color-slate-700: #cbd5e1; /* Secondary Borders (slate-300) */
+  --color-slate-400: #475569; /* Crisp Secondary Body Text (slate-600) */
+  --color-slate-300: #334155; /* High-contrast Body Text (slate-700) */
+  --color-slate-200: #1e293b; /* Emphasized Headings (slate-800) */
+  --color-slate-100: #0f172a; /* Deep Contrast Titles (slate-900) */
 }
 ```
 
-#### 2. QuizAttempt Schema (`models/QuizAttempt.js`)
-Records completed employee training attempts with granular telemetry:
-```json
-{
-  "_id": "6724a1b8c298d415f3a09812",
-  "participantName": "Hari",
-  "department": "Engineering",
-  "score": 1025,
-  "maxScore": 1250,
-  "percentage": 82,
-  "level": "Cyber Champion",
-  "completionTimeSeconds": 245,
-  "completed": true,
-  "categoryBreakdown": {
-    "Phishing Detection": { "score": 225, "maxScore": 250, "percentage": 90 },
-    "Social Engineering": { "score": 200, "maxScore": 250, "percentage": 80 },
-    "Password Safety": { "score": 200, "maxScore": 250, "percentage": 80 },
-    "Incident Response": { "score": 200, "maxScore": 250, "percentage": 80 },
-    "Remote Work Safety": { "score": 200, "maxScore": 250, "percentage": 80 }
-  },
-  "answers": [ /* Detailed answer-by-answer response records */ ],
-  "recommendations": [
-    "Great intuition recognizing impersonation attempts and manufactured urgency."
-  ],
-  "createdAt": "2026-10-03T06:12:45.000Z"
-}
-```
-
-#### 3. AdminUser Schema (`models/AdminUser.js`)
-Secures administrative access with bcrypt hashing:
-```json
-{
-  "_id": "6724a100c298d415f3a09801",
-  "username": "admin",
-  "passwordHash": "$2a$10$wT3wYyK2Gv...",
-  "name": "Lead Security Administrator",
-  "role": "admin"
-}
-```
+### Contrast Optimization Across Views
+- **Admin Dashboard:** Hardcoded `text-white` classes were refactored to `text-slate-100`. In Dark Mode, text renders as bright `#f1f5f9`; in Light Mode, text inverts to deep high-contrast charcoal `#0f172a`. Participant names in tables are clearly legible against white backgrounds.
+- **Echo Tutor:** Replaced static dark hex codes (`#0f1921`, `#0a1219`, `#182318`) with semantic tokens (`bg-slate-900`, `bg-slate-850`, `text-slate-200`, `border-slate-800`), rendering Echo as an elegant, clean white panel in light mode and a sleek dark cyber drawer in dark mode.
 
 ---
 
-### 7.2 REST API Specification
+## 7. REST API Specifications
 
-| Endpoint | Method | Auth Required | Description | Request Body / Query Params | Success Response (HTTP 200/201) |
+| Endpoint | Method | Auth Required | Description | Request Body / Parameters | Success Response |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `/api/health` | `GET` | No | Heartbeat check & DB connection state | None | `{ "status": "ok", "database": "connected" }` |
-| `/api/questions` | `GET` | No | Fetch all 10 simulation challenges | None | `{ "success": true, "data": [ ... ] }` |
-| `/api/questions/weak-areas` | `GET` | No | Fetch filtered questions for remediation | `?categories=Phishing,Password` | `{ "success": true, "data": [ ... ] }` |
-| `/api/quiz/submit` | `POST` | No | Evaluates and records learner attempt | `{ participantName, department, answers, completionTimeSeconds }` | `{ "success": true, "data": { score, level, percentage, ... } }` |
-| `/api/admin/login` | `POST` | No | Authenticates admin, returns JWT token | `{ "username": "admin", "password": "..." }` | `{ "success": true, "token": "<jwt>", "user": { ... } }` |
-| `/api/admin/me` | `GET` | Yes (Bearer) | Validates active session token | None (Header: `Authorization: Bearer <token>`) | `{ "success": true, "user": { ... } }` |
-| `/api/admin/stats` | `GET` | Yes (Bearer) | Aggregated organization metrics | None | `{ "success": true, "data": { totalParticipants, averageScore, ... } }` |
-| `/api/admin/attempts` | `GET` | Yes (Bearer) | Lists all employee attempt logs | None (Optional `limit=50`) | `{ "success": true, "data": [ ... ] }` |
-| `/api/admin/reset-demo` | `POST` | Yes (Bearer) | Purges test/demo data safely | None | `{ "success": true, "message": "Cleared" }` |
+| `/api/health` | `GET` | No | Heartbeat & DB connection status | None | `{ "status": "ok", "database": "connected" }` |
+| `/api/questions` | `GET` | No | Fetch all 10 simulation scenarios | None | `{ "success": true, "data": [ ... ] }` |
+| `/api/session/start` | `POST` | Rate-Limited | Start new session with unique key check | `{ participantName, department, email? }` | `{ "success": true, "sessionId", "deviceToken", "resumeCode", ... }` |
+| `/api/session/:id` | `GET` | Device Token | Fetch active session state | Header: `Authorization: Bearer <deviceToken>` | `{ "success": true, "data": { ... } }` |
+| `/api/session/:id/answer`| `PUT` | Device Token | Autosave per-question answer | `{ questionId, userResponse, timeSpentSeconds }` | `{ "success": true, "currentIndex", "activeSeconds" }` |
+| `/api/session/resume` | `POST` | Rate-Limited | Resume session on new device | `{ participantName, department, resumeCode \| email }` | `{ "success": true, "sessionId", "deviceToken", ... }` |
+| `/api/session/:id/complete`| `POST` | Device Token | Grade session & record attempt | Header: `Authorization: Bearer <deviceToken>` | `{ "success": true, "data": QuizAttempt }` |
+| `/api/quiz/submit` | `POST` | No | Submit legacy / practice attempt | `{ participantName, department, answers, isPracticeQuiz }` | `{ "success": true, "data": QuizAttempt }` |
+| `/api/quiz/attempt/:id` | `GET` | No | Fetch certified quiz attempt by ID | None | `{ "success": true, "data": QuizAttempt }` |
+| `/api/quiz/attempt/by-user` | `GET` | No | Fetch completed attempt by user & department | Query: `?name=...&department=...` | `{ "success": true, "data": QuizAttempt }` |
+| `/api/quiz/leaderboard` | `GET` | No | Top certified attempts with meme titles | Query: `?limit=15` | `{ "success": true, "data": [ LeaderboardEntry ... ] }` |
+| `/api/admin/login` | `POST` | No | Authenticates admin, returns JWT | `{ "username": "admin", "password": "..." }` | `{ "success": true, "token": "<jwt>", "user": { ... } }` |
+| `/api/admin/stats` | `GET` | Yes (Bearer) | Aggregated organizational metrics | Header: `Authorization: Bearer <token>` | `{ "success": true, "data": { ... } }` |
+| `/api/admin/attempts` | `GET` | Yes (Bearer) | List all completed attempts | Header: `Authorization: Bearer <token>` | `{ "success": true, "data": [ ... ] }` |
+| `/api/admin/sessions/in-progress`| `GET` | Yes (Bearer) | List active unfinished sessions | Header: `Authorization: Bearer <token>` | `{ "success": true, "data": [ ... ] }` |
+| `/api/admin/session/:id/reset`| `POST`| Yes (Bearer) | Reset participant's active session | Header: `Authorization: Bearer <token>` | `{ "success": true, "message": "Session reset" }` |
 
 ---
 
-## 8. Security Hardening & Compliance Readiness
+## 8. Security Hardening & Privacy Safeguards
 
-1. **Stateless Authentication Architecture:**
-   - Administrative endpoints strictly require standard HTTP Bearer token headers (`Authorization: Bearer <token>`).
-   - Tokens expire automatically after 8 hours (`expiresIn: '8h'`), enforcing credential rotation.
-2. **Password Cryptography:**
-   - Passwords are never stored in plaintext. They are salted and hashed using `bcryptjs` with 10 salt rounds before being written to disk.
-3. **Defense Against Credential Leaks:**
-   - Production build configurations actively sanitize environment outputs (`SECRETS_SCAN_OMIT_KEYS` configured in `netlify.toml`).
-   - Secret keys and Atlas connection credentials are bound exclusively via runtime environment variables on the Render host.
-4. **Input Sanitization & Type Coercion:**
-   - API endpoints enforce trimmed strings, type validations, and bounded array lengths on incoming submissions, preventing NoSQL injection and payload poisoning.
-5. **Zero-Trust Network Isolation:**
-   - The frontend communicates with the backend exclusively via HTTPS/TLS 1.3.
-   - Database credentials use SRV record resolution with scram-sha-1/256 authentication over encrypted TLS sockets.
-6. **Regulatory Audit Readiness:**
-   - The aggregated metrics, participant logs, and CSV export functionality directly map to compliance control requirements:
-     - **ISO/IEC 27001:2022 Control 6.3:** Information security awareness, education and training.
-     - **SOC 2 Type II Common Criteria 2.2:** Communication and enforcement of integrity and ethical values.
-     - **HIPAA Security Rule 45 CFR § 164.308(a)(5):** Security awareness and training program.
+1. **Email Privacy & Zero-Leakage Architecture:**
+   - Work email is optional and used strictly for cross-device session resumption.
+   - Enforced via Mongoose `select: false` on both `QuizSession` and `QuizAttempt`.
+   - Never exposed in API responses, never rendered on client screens, and omitted from CSV audit logs.
+2. **Cryptographic Device Tokens:**
+   - Sessions issue 256-bit random hex tokens.
+   - Server persists only the SHA-256 hash (`deviceTokenHash`). Every session modification requires the Bearer token, preventing session hijacking.
+3. **Brute-Force & Enumeration Mitigation:**
+   - IP rate-limiting guards `/api/session/start` (30 req / 15 min) and `/api/session/resume` (10 req / 15 min).
+   - Uniform error messages prevent user enumeration.
+4. **Race-Safe Identity Uniqueness:**
+   - Atomic compound unique index `{ nameKey: 1, department: 1 }` prevents concurrent duplicate registrations.
+5. **Stateless Administrative Access:**
+   - All `/api/admin/*` endpoints require HS256-signed JWTs with 8-hour expiry.
 
 ---
 
 ## 9. Verification & Operational Testing
 
-The deployed infrastructure has completed full integration and load verification:
+The platform has completed end-to-end verification across all tiers:
 
-- **Edge Proxy Verification:** Verified that requests from the Netlify frontend to `/api/questions` successfully resolve through the reverse-proxy rewrite to Render without CORS errors.
-- **Database Synchronization:** Verified that all 10 canonical challenges automatically synchronize upon startup, and confirmed that historical employee records (`saaho`, `harry`, `hari`, `ippo`, `jagat`, `nagur`, `asdf`, `mohan`) persist in MongoDB Atlas with complete category breakdowns.
-- **Failover Testing:** Tested simulated network partitions; confirmed that the API activates the in-memory fallback database transparently without crashing the Node.js process.
-- **Client Fallback Resilience:** In the event of total server loss or offline operation, the client contains a built-in static fallback dataset (`fallbackQuestions.ts`), ensuring users can complete awareness sessions uninterrupted.
+- **Identity Normalization Testing:** Verified that `"Red Criminal"`, `"red criminal"`, and `"RED CRIMINAL"` resolve to `nameKey: "red criminal"`, blocking duplicate accounts in the same department.
+- **Cross-Department Permission:** Confirmed that a participant with the same name can register in a different department (e.g., Sales vs. IT) without conflict.
+- **Completion Lockout:** Verified that completed participants receive HTTP 409 with `isCompleted: true` and are presented with a locked completion card; retakes are restricted to practice mode.
+- **Session Autosave & Resumption:** Tested closing the browser tab on Challenge 4; upon reopening, verified the session resumes at Challenge 4 with score and elapsed time intact.
+- **Cross-Device Recovery:** Confirmed that entering the 8-character code `XXXX-XXXX` from a separate incognito browser context restores session state and issues a new device token.
+- **Echo Tutor Behavior:** Verified that typing `"hint"` provides a clue for the first unfound item, and that moving to the next challenge completely resets Echo's conversation and findings.
+- **Light & Dark Theme Verification:** Verified that switching between dark and light modes preserves crisp text readability across all tables, admin dashboards, and Echo components.
+- **Cyber Defender Leaderboard & Meme Titles:** Verified that completing a test loads the real-time leaderboard sorted by score and completion time, tags the current user with the `YOU` highlight badge, and deterministically allocates themed cybersecurity meme/hacker titles according to score bracket.
 
 ---
 
 ## 10. Conclusion & Future Roadmap
 
-The **Microcare Cyber Defender Platform** represents a modern, resilient, and engaging approach to enterprise cybersecurity training. By replacing passive tests with hands-on threat simulations, it bridges the gap between theoretical knowledge and real-world behavioral defense.
+The **Microcare Cyber Aware 2026 Platform (Version 2.1.0)** delivers an engaging, resilient, and enterprise-ready cybersecurity evaluation framework. With server-persisted session tracking, case-insensitive retake prevention, adaptive contextual tutoring via Echo, and dual-theme accessibility, the platform stands as a robust defense tool for organizational cybersecurity readiness.
 
-### Planned Enhancements (Phase 2 Roadmap)
-- **Enterprise SSO / SAML 2.0 Integration:** Direct integration with Okta, Microsoft Entra ID (Azure AD), and Google Workspace for seamless corporate login.
-- **Custom Scenario Builder:** Administrative web UI allowing the security team to generate custom phishing simulation templates based on recent attacks observed in the wild.
-- **Slack & Microsoft Teams Automated Notifications:** Automatic alerts sent to employees upon new campaign releases and automated weekly security digests for team managers.
+### Planned Enhancements (Phase 3 Roadmap)
+- **Enterprise SSO / SAML 2.0 Integration:** Direct integration with Okta, Microsoft Entra ID, and Google Workspace.
+- **Automated Remediation Workflows:** Webhook triggers notifying team managers when an employee scores in the *Needs Practice* tier.
+- **Custom Scenario Builder:** Administrative interface allowing security teams to craft custom phishing simulations based on real-world incident telemetry.
 
 ---
-*Report approved by Engineering Team — Microcare Cyber Defender (Cyber Aware 2026).*
+*Report approved by Engineering Team — Microcare Cyber Aware 2026 (“You are the Firewall”).*

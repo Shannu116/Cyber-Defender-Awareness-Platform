@@ -13,13 +13,18 @@ import {
   Mail,
   KeyRound,
   X,
-  Building
+  Building,
+  Award,
+  Trophy
 } from 'lucide-react';
 import { DEPARTMENTS } from '../constants/departments';
+import { QuizAttempt } from '../types';
+import { fetchAttemptById, fetchAttemptByUser } from '../services/api';
 
 interface WelcomeScreenProps {
   onStartMission: (participantName: string, department: string, email?: string) => Promise<void> | void;
   onResumeMission?: (participantName: string, department: string, resumeCode?: string, email?: string) => Promise<void> | void;
+  onViewCompletedResults?: (attempt: QuizAttempt) => void;
   onOpenAdmin: () => void;
   isStarting?: boolean;
 }
@@ -27,6 +32,7 @@ interface WelcomeScreenProps {
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ 
   onStartMission,
   onResumeMission,
+  onViewCompletedResults,
   isStarting = false
 }) => {
   const [name, setName] = useState('');
@@ -35,6 +41,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   const [error, setError] = useState('');
   const [duplicateMessage, setDuplicateMessage] = useState<string | null>(null);
   const [isTestCompleted, setIsTestCompleted] = useState(false);
+  const [completedAttempt, setCompletedAttempt] = useState<QuizAttempt | null>(null);
+  const [isLoadingAttempt, setIsLoadingAttempt] = useState(false);
 
   // Resume modal state
   const [showResumeModal, setShowResumeModal] = useState(false);
@@ -66,6 +74,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     setError('');
     setDuplicateMessage(null);
     setIsTestCompleted(false);
+    setCompletedAttempt(null);
 
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -89,9 +98,20 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     } catch (err: any) {
       if (err.isDuplicate) {
         if (err.isCompleted) {
-          // User already finished the test — block retake, show completion notice
+          // User already finished the test — block retake, provide direct link to view results
           setIsTestCompleted(true);
           setDuplicateMessage(err.message);
+          if (err.attempt) {
+            setCompletedAttempt(err.attempt);
+          } else if (err.attemptId) {
+            fetchAttemptById(err.attemptId)
+              .then(att => setCompletedAttempt(att))
+              .catch(() => {});
+          } else {
+            fetchAttemptByUser(trimmedName, department)
+              .then(att => setCompletedAttempt(att))
+              .catch(() => {});
+          }
         } else {
           // User has an in-progress session — offer to resume
           setDuplicateMessage(err.message);
@@ -101,6 +121,25 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       } else {
         setError(err.message || 'Failed to start test session. Please try again.');
       }
+    }
+  };
+
+  const handleViewCompletedResults = async () => {
+    if (!onViewCompletedResults) return;
+    if (completedAttempt) {
+      onViewCompletedResults(completedAttempt);
+      return;
+    }
+
+    setIsLoadingAttempt(true);
+    try {
+      const attempt = await fetchAttemptByUser(name.trim(), department);
+      setCompletedAttempt(attempt);
+      onViewCompletedResults(attempt);
+    } catch (err: any) {
+      setError(err.message || 'Could not load your completed test results.');
+    } finally {
+      setIsLoadingAttempt(false);
     }
   };
 
@@ -219,21 +258,45 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             </span>
           </div>
 
-          {/* Test Already COMPLETED — hard block, no resume allowed */}
+          {/* Test Already COMPLETED — provide direct link to view results */}
           {isTestCompleted && duplicateMessage && (
-            <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs space-y-3 animate-fadeIn">
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-500/50 text-emerald-200 text-xs space-y-3.5 animate-fadeIn shadow-lg shadow-emerald-950/40">
+              <div className="flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0 mt-0.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
                 <div className="space-y-1">
                   <p className="font-bold text-emerald-300 text-sm">Test Already Completed</p>
-                  <p className="leading-relaxed text-emerald-200/90">
+                  <p className="leading-relaxed text-emerald-200/90 text-xs">
                     {duplicateMessage}
                   </p>
                 </div>
               </div>
-              <p className="text-[11px] text-emerald-400/70 pl-7">
-                Your results are recorded. If you believe this is a mistake, please contact your security administrator.
-              </p>
+
+              <div className="pt-2 border-t border-emerald-500/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                <span className="text-[11px] text-emerald-400/80">
+                  Your certified results and cybersecurity ranking are available.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleViewCompletedResults}
+                  disabled={isLoadingAttempt}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 shrink-0 group disabled:opacity-60 cursor-pointer"
+                >
+                  {isLoadingAttempt ? (
+                    <>
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-950 border-t-transparent animate-spin" />
+                      <span>Loading Results...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Award className="w-4 h-4 text-slate-950" />
+                      <span>View Your Results & Certificate</span>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           )}
 

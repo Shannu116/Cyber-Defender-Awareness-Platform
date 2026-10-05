@@ -6,6 +6,7 @@ import {
   QuizSessionData,
   SessionStartResponse,
   SessionResumeResponse,
+  LeaderboardEntry,
 } from '../types';
 import { fallbackQuestions } from '../data/fallbackQuestions';
 
@@ -131,6 +132,20 @@ export async function submitQuizAttempt(payload: {
   } catch (err) {
     console.error('[API] Failed to submit quiz attempt to MongoDB:', err);
     throw err;
+  }
+}
+
+// --- Leaderboard & Cyber Meme Titles ---
+
+export async function fetchLeaderboard(limit = 15): Promise<LeaderboardEntry[]> {
+  try {
+    const res = await fetch(`${API_BASE}/quiz/leaderboard?limit=${limit}`);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const json = await res.json();
+    return json.data || [];
+  } catch (err) {
+    console.error('[API] Failed to fetch leaderboard from MongoDB:', err);
+    return [];
   }
 }
 
@@ -300,6 +315,8 @@ export async function startSession(payload: {
     const error: any = new Error(json.error || 'A session already exists for this participant and department.');
     error.isDuplicate = true;
     error.isCompleted = Boolean(json.isCompleted);
+    error.attempt = json.attempt || null;
+    error.attemptId = json.attemptId || null;
     throw error;
   }
 
@@ -418,5 +435,26 @@ export async function completeSession(
   const json = await res.json();
   clearStoredSession();
   return json.data || json.attempt;
+}
+
+export async function fetchAttemptById(attemptId: string): Promise<QuizAttempt> {
+  const res = await fetch(`${API_BASE}/quiz/attempt/${attemptId}`);
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error(json.error || `Failed to fetch quiz attempt (${res.status})`);
+  }
+  const json = await res.json();
+  return json.data;
+}
+
+export async function fetchAttemptByUser(participantName: string, department: string): Promise<QuizAttempt> {
+  const params = new URLSearchParams({ name: participantName, department });
+  const res = await fetch(`${API_BASE}/quiz/attempt/by-user?${params.toString()}`);
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error(json.error || 'No completed attempt found for this defender.');
+  }
+  const json = await res.json();
+  return json.data;
 }
 

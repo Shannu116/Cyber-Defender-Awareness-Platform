@@ -153,6 +153,147 @@ app.post('/api/quiz/submit', async (req, res) => {
   }
 });
 
+// GET single attempt by ID (Public for completed results lookup)
+app.get('/api/quiz/attempt/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid attempt ID format' });
+    }
+    const attempt = await QuizAttempt.findById(id);
+    if (!attempt) {
+      return res.status(404).json({ success: false, error: 'Quiz attempt not found' });
+    }
+    res.json({ success: true, data: attempt });
+  } catch (err) {
+    console.error('Error fetching quiz attempt by ID:', err);
+    res.status(500).json({ success: false, error: 'Failed to retrieve quiz attempt' });
+  }
+});
+
+// GET attempt by participant name and department
+app.get('/api/quiz/attempt/by-user', async (req, res) => {
+  try {
+    const { name, department } = req.query;
+    if (!name || !department) {
+      return res.status(400).json({ success: false, error: 'Name and department query parameters are required' });
+    }
+    const attempt = await QuizAttempt.findOne({
+      participantName: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
+      department: department.trim(),
+      completed: true
+    }).sort({ createdAt: -1 });
+
+    if (!attempt) {
+      return res.status(404).json({ success: false, error: 'No completed quiz attempt found for this defender' });
+    }
+    res.json({ success: true, data: attempt });
+  } catch (err) {
+    console.error('Error fetching quiz attempt by user:', err);
+    res.status(500).json({ success: false, error: 'Failed to retrieve quiz attempt' });
+  }
+});
+
+// Helper: Generates funny cybersecurity meme and hacker titles
+function getCyberMemeTitle(score, rank, name = '') {
+  if (rank === 1) return 'Chief Firewall Whisperer 👑';
+  if (rank === 2) return 'Zero-Day Overlord ⚡';
+  if (rank === 3) return 'Master of sudo rm -rf / 💻';
+
+  // Seed with name char codes for consistent assignment
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) - hash + name.charCodeAt(i);
+    hash |= 0;
+  }
+  const pick = (arr) => arr[Math.abs(hash) % arr.length];
+
+  if (score >= 950) {
+    return pick([
+      'The 1337 H4x0r 🕶️',
+      'NSA Intern of the Month 🕵️',
+      'Zero-Day Overlord ⚡',
+      'Root Access Granted 🔑',
+      'Cyber Chad 💪',
+      'Certified Packet Bender 🌐'
+    ]);
+  } else if (score >= 800) {
+    return pick([
+      'Phish Fryer 9000 🎣',
+      'Kernel Panic Preventer 🛡️',
+      'Air-Gapped Brain 🧠',
+      'MFA Fatigue Immune 📵',
+      'Script Kiddie Repeller 🚫',
+      'Entropy Maximizer 🔐',
+      'Social Engineering Sponge 🧽'
+    ]);
+  } else if (score >= 600) {
+    return pick([
+      'Password: Not Hunter2 🔑',
+      'Clean Desk Crusader 🗄️',
+      'Hover Before You Click Fanatic 🖱️',
+      'VPN Always-On Defender 🛡️',
+      'Suspicious Link Skeptic 🧐',
+      'Incognito Mode Enjoyer 🕶️'
+    ]);
+  } else if (score >= 400) {
+    return pick([
+      "Didn't Click the Free Pizza Link 🍕",
+      'Sticky Note Credential Hider 📝',
+      'Almost Got Phished But Survived 😅',
+      'Rebooted the Router Once 🔄',
+      'HTTPS Appreciator 🔒',
+      'Locked Screen After 3 Mins ⏱️'
+    ]);
+  } else {
+    return pick([
+      "Password is 'Password123!' 🤡",
+      'Plugged in the Mystery USB Drive 🔌',
+      'Wired 50 Gift Cards to the CEO 💳',
+      "Clicked 'Hot Singles in Your Subnet' 💔",
+      'Disabled Firewall for Video Games 🎮',
+      "Tapped 'Accept' on 2 AM MFA Push 📱"
+    ]);
+  }
+}
+
+// GET Leaderboard (Public - Completed non-practice quiz attempts)
+app.get('/api/quiz/leaderboard', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 15, 50);
+
+    const attempts = await QuizAttempt.find({
+      completed: true,
+      isPracticeQuiz: { $ne: true }
+    })
+      .select('participantName department score maxScore percentage level completionTimeSeconds createdAt')
+      .sort({ score: -1, completionTimeSeconds: 1, createdAt: 1 })
+      .limit(limit)
+      .lean();
+
+    const leaderboard = attempts.map((att, index) => ({
+      rank: index + 1,
+      id: att._id,
+      participantName: att.participantName,
+      department: att.department,
+      score: att.score,
+      maxScore: att.maxScore || 1000,
+      percentage: att.percentage,
+      level: att.level,
+      completionTimeSeconds: att.completionTimeSeconds || 0,
+      cyberTitle: getCyberMemeTitle(att.score, index + 1, att.participantName)
+    }));
+
+    res.json({
+      success: true,
+      data: leaderboard
+    });
+  } catch (err) {
+    console.error('Error fetching leaderboard:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch leaderboard' });
+  }
+});
+
 // POST Admin Login (Returns JWT token)
 app.post('/api/admin/login', async (req, res) => {
   try {

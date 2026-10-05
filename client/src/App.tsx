@@ -548,6 +548,12 @@ export function App() {
             <WelcomeScreen
               onStartMission={handleStartMission}
               onResumeMission={handleResumeMission}
+              onViewCompletedResults={(attempt) => {
+                setParticipantName(attempt.participantName);
+                setDepartment(attempt.department);
+                setAttemptResult(attempt);
+                setCurrentStep('results');
+              }}
               onOpenAdmin={navigateToAdmin}
               isStarting={isColdStarting}
             />

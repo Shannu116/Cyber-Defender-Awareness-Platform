@@ -230,3 +230,16 @@ export interface SessionResumeResponse {
   attempt?: QuizAttempt | null;
 }
 
+export interface LeaderboardEntry {
+  rank: number;
+  id?: string;
+  participantName: string;
+  department: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  level: string;
+  completionTimeSeconds?: number;
+  cyberTitle: string;
+}
+

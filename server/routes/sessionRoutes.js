@@ -89,13 +89,45 @@ router.post('/start', startLimiter, async (req, res) => {
           error: `Someone has already registered as "${storedName}" in ${trimmedDept}. If that's you, resume your test below. If you're a different person, add your middle initial or choose your correct department.`
         });
       } else {
+        // Fetch the completed attempt record from MongoDB
+        let attemptData = null;
+        if (existing.attemptId) {
+          attemptData = await QuizAttempt.findById(existing.attemptId);
+        }
+        if (!attemptData) {
+          attemptData = await QuizAttempt.findOne({
+            participantName: { $regex: new RegExp(`^${trimmedName}$`, 'i') },
+            department: trimmedDept
+          });
+        }
+
         return res.status(409).json({
           success: false,
           isDuplicate: true,
           isCompleted: true,
-          error: `"${storedName}" in ${trimmedDept} has already completed the cybersecurity awareness test. If you need a retake, please contact your security administrator.`
+          attemptId: existing.attemptId || (attemptData ? attemptData._id : null),
+          attempt: attemptData,
+          error: `"${storedName}" in ${trimmedDept} has already completed the cybersecurity awareness test. Retakes are not permitted.`
         });
       }
+    }
+
+    // Also check QuizAttempt directly to ensure no completed attempt exists
+    const directAttempt = await QuizAttempt.findOne({
+      participantName: { $regex: new RegExp(`^${trimmedName}$`, 'i') },
+      department: trimmedDept,
+      completed: true,
+      isPracticeQuiz: { $ne: true }
+    });
+    if (directAttempt) {
+      return res.status(409).json({
+        success: false,
+        isDuplicate: true,
+        isCompleted: true,
+        attemptId: directAttempt._id,
+        attempt: directAttempt,
+        error: `"${directAttempt.participantName}" in ${trimmedDept} has already completed the cybersecurity awareness test. Retakes are not permitted.`
+      });
     }
 
     // Capture snapshot of question IDs in order
@@ -348,8 +380,16 @@ router.post('/resume', resumeLimiter, async (req, res) => {
     console.log(`[QuizSession] Resumed session ID=${session._id} for "${session.participantName}" on new device`);
 
     let attemptData = null;
-    if (session.status === 'completed' && session.attemptId) {
-      attemptData = await QuizAttempt.findById(session.attemptId);
+    if (session.status === 'completed') {
+      if (session.attemptId) {
+        attemptData = await QuizAttempt.findById(session.attemptId);
+      }
+      if (!attemptData) {
+        attemptData = await QuizAttempt.findOne({
+          participantName: { $regex: new RegExp(`^${session.participantName}$`, 'i') },
+          department: session.department
+        });
+      }
     }
 
     // Return session data (NEVER returning email!)
