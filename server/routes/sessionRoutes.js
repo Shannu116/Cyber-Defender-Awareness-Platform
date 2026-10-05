@@ -77,56 +77,40 @@ router.post('/start', startLimiter, async (req, res) => {
     const trimmedDept = department.trim();
     const nameKey = normalizeName(trimmedName);
 
-    // Pre-check for duplicate active or completed session (nameKey is always lowercased,
-    // so "Red Criminal", "red criminal", "RED CRIMINAL" all produce the same nameKey)
-    const existing = await QuizSession.findOne({ nameKey, department: trimmedDept });
-    if (existing) {
-      const storedName = existing.participantName; // use original registered casing in message
-      if (existing.status === 'in_progress') {
-        return res.status(409).json({
-          success: false,
-          isDuplicate: true,
-          error: `Someone has already registered as "${storedName}" in ${trimmedDept}. If that's you, resume your test below. If you're a different person, add your middle initial or choose your correct department.`
-        });
-      } else {
-        // Fetch the completed attempt record from MongoDB
-        let attemptData = null;
-        if (existing.attemptId) {
-          attemptData = await QuizAttempt.findById(existing.attemptId);
-        }
-        if (!attemptData) {
-          attemptData = await QuizAttempt.findOne({
-            participantName: { $regex: new RegExp(`^${trimmedName}$`, 'i') },
-            department: trimmedDept
-          });
-        }
-
-        return res.status(409).json({
-          success: false,
-          isDuplicate: true,
-          isCompleted: true,
-          attemptId: existing.attemptId || (attemptData ? attemptData._id : null),
-          attempt: attemptData,
-          error: `"${storedName}" in ${trimmedDept} has already completed the cybersecurity awareness test. Retakes are not permitted.`
-        });
-      }
-    }
-
-    // Also check QuizAttempt directly to ensure no completed attempt exists
-    const directAttempt = await QuizAttempt.findOne({
+    // 1. Check QuizAttempt first: If the user has completed the test, block retakes and return their attempt
+    const completedAttempt = await QuizAttempt.findOne({
       participantName: { $regex: new RegExp(`^${trimmedName}$`, 'i') },
       department: trimmedDept,
       completed: true,
       isPracticeQuiz: { $ne: true }
     });
-    if (directAttempt) {
+    if (completedAttempt) {
+      // Purge any lingering sessions for this completed participant so DB remains clean
+      await QuizSession.deleteMany({
+        $or: [
+          { nameKey, department: trimmedDept },
+          { participantName: { $regex: new RegExp(`^${trimmedName}$`, 'i') }, department: trimmedDept }
+        ]
+      });
+
       return res.status(409).json({
         success: false,
         isDuplicate: true,
         isCompleted: true,
-        attemptId: directAttempt._id,
-        attempt: directAttempt,
-        error: `"${directAttempt.participantName}" in ${trimmedDept} has already completed the cybersecurity awareness test. Retakes are not permitted.`
+        attemptId: completedAttempt._id,
+        attempt: completedAttempt,
+        error: `"${completedAttempt.participantName}" in ${trimmedDept} has already completed the cybersecurity awareness test. Retakes are not permitted.`
+      });
+    }
+
+    // 2. Check for active in-progress session in QuizSession
+    const existing = await QuizSession.findOne({ nameKey, department: trimmedDept });
+    if (existing) {
+      const storedName = existing.participantName; // use original registered casing in message
+      return res.status(409).json({
+        success: false,
+        isDuplicate: true,
+        error: `Someone has already registered as "${storedName}" in ${trimmedDept}. If that's you, resume your test below. If you're a different person, add your middle initial or choose your correct department.`
       });
     }
 
@@ -340,6 +324,36 @@ router.post('/resume', resumeLimiter, async (req, res) => {
     }).select('+email');
 
     if (!session) {
+      // Check if the user already completed the test and their session was cleaned up
+      const completedAttempt = await QuizAttempt.findOne({
+        participantName: { $regex: new RegExp(`^${trimmedName}$`, 'i') },
+        department: trimmedDept,
+        completed: true,
+        isPracticeQuiz: { $ne: true }
+      });
+
+      if (completedAttempt) {
+        return res.json({
+          success: true,
+          sessionId: completedAttempt._id,
+          deviceToken: generateDeviceToken(),
+          resumeCode: 'COMPLETED',
+          session: {
+            id: completedAttempt._id,
+            participantName: completedAttempt.participantName,
+            department: completedAttempt.department,
+            status: 'completed',
+            currentIndex: 10,
+            activeSeconds: completedAttempt.completionTimeSeconds || 0,
+            resumeCode: 'COMPLETED',
+            answers: [],
+            questionIds: [],
+            attemptId: completedAttempt._id
+          },
+          attempt: completedAttempt
+        });
+      }
+
       return res.status(401).json({
         success: false,
         error: 'The details provided do not match any active test session. Please check your spelling, department, or resume code.'
@@ -471,12 +485,16 @@ router.post('/:id/complete', async (req, res) => {
 
     const savedAttempt = await newAttempt.save();
 
-    session.status = 'completed';
-    session.attemptId = savedAttempt._id;
-    session.lastActivityAt = new Date();
-    await session.save();
+    // Clean up/clear the in-progress session(s) from QuizSession collection in MongoDB
+    await QuizSession.deleteMany({
+      $or: [
+        { _id: session._id },
+        { nameKey: session.nameKey, department: session.department },
+        { participantName: { $regex: new RegExp(`^${session.participantName}$`, 'i') }, department: session.department }
+      ]
+    });
 
-    console.log(`[QuizSession] Completed session ID=${session._id} -> Attempt ID=${savedAttempt._id} with Score=${savedAttempt.score}`);
+    console.log(`[QuizSession] Completed test & cleared active session for "${session.participantName}" (${session.department}) -> Attempt ID=${savedAttempt._id} with Score=${savedAttempt.score}`);
 
     return res.json({
       success: true,

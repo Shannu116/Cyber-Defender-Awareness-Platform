@@ -42,6 +42,22 @@ async function seedDatabaseIfEmpty() {
       participantName: { $regex: /David K\.|Sarah M\.|Ravi P\.|Elena V\.|James L\.|Demo User/i }
     });
 
+    // Clean up any lingering active sessions for users who have already completed the quiz
+    const completedAttempts = await QuizAttempt.find({ completed: true, isPracticeQuiz: { $ne: true } })
+      .select('participantName department')
+      .lean();
+    for (const att of completedAttempts) {
+      const cName = (att.participantName || '').trim();
+      const cDept = (att.department || '').trim();
+      if (cName && cDept) {
+        await QuizSession.deleteMany({
+          participantName: { $regex: new RegExp(`^${cName}$`, 'i') },
+          department: cDept
+        });
+      }
+    }
+    console.log(`[MongoDB] Cleaned up completed participant sessions from QuizSession collection.`);
+
     const adminCount = await AdminUser.countDocuments();
     if (adminCount === 0) {
       console.log('[MongoDB] AdminUser collection empty. Seeding default administrator...');
@@ -141,6 +157,19 @@ app.post('/api/quiz/submit', async (req, res) => {
 
     const savedAttempt = await newAttempt.save();
     console.log(`[MongoDB] Quiz attempt recorded: ID=${savedAttempt._id}, Participant="${savedAttempt.participantName}", Score=${savedAttempt.score} (Practice=${savedAttempt.isPracticeQuiz})`);
+
+    // If not a practice quiz, clean up any active/in-progress sessions for this participant from QuizSession collection
+    if (!isPracticeQuiz) {
+      const cleanName = participantName.trim();
+      const cleanDept = department.trim();
+      await QuizSession.deleteMany({
+        $or: [
+          { participantName: { $regex: new RegExp(`^${cleanName}$`, 'i') }, department: cleanDept },
+          ...(sessionId && mongoose.Types.ObjectId.isValid(sessionId) ? [{ _id: sessionId }] : [])
+        ]
+      });
+      console.log(`[QuizSession] Cleared in-progress sessions for "${cleanName}" (${cleanDept}) from database.`);
+    }
 
     res.status(201).json({
       success: true,

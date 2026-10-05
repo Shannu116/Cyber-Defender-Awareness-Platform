@@ -164,12 +164,12 @@ All user registrations and analytics are organized around 9 centralized business
 The system persists data across two MongoDB collections and client storage tiers:
 
 #### 1. In `QuizSession` Collection (`models/QuizSession.js`)
-Tracks the real-time lifecycle of an active or completed evaluation:
+Tracks the real-time lifecycle of an active in-progress test. When a participant finishes and submits their test, their temporary session document is **automatically cleared and purged from `QuizSession`** while their certified evaluation is permanently recorded in `QuizAttempt`:
 - `nameKey` *(String, indexed)*: Lowercase, trimmed, diacritic-stripped normalized string (e.g., `"red criminal"`).
 - `participantName` *(String)*: User's typed name preserving original casing (e.g., `"Red Criminal"`).
 - `department` *(String)*: Selected corporate department.
 - `email` *(String, select: false)*: Work email address. **Excluded from all query projections by default.**
-- `status` *(String, enum)*: `'in_progress'` during test, updated to `'completed'` upon final submission.
+- `status` *(String, enum)*: `'in_progress'` during the test.
 - `questionIds` *(Array of Strings)*: Snapshot order of questions for this session.
 - `currentIndex` *(Number)*: Current active challenge index (0 to 9).
 - `answers` *(Array of Objects)*: Autosaved answers containing `questionId`, `userResponse`, `timeSpentSeconds`, and `answeredAt`.
@@ -178,7 +178,7 @@ Tracks the real-time lifecycle of an active or completed evaluation:
 - `deviceTokenHash` *(String, indexed)*: SHA-256 hash of the 256-bit random cryptographic device token.
 - `startedAt` & `lastActivityAt` *(Dates)*: Activity timestamps for abandonment tracking and analytics.
 - `attemptId` *(ObjectId, ref: QuizAttempt)*: Links to the certified attempt record once completed.
-- **Compound Unique Index:** `{ nameKey: 1, department: 1 }` strictly enforces one session per person per department.
+- **Compound Unique Index:** `{ nameKey: 1, department: 1 }` strictly enforces one active session per person per department.
 
 #### 2. In `QuizAttempt` Collection (`models/QuizAttempt.js`)
 Stores certified historical records of completed tests:
