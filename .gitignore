@@ -1,12 +1,22 @@
 # Dependencies
 node_modules/
+**/node_modules/
 /.pnp
 .pnp.js
 
-# Environment Variables & Secrets
+# Sensitive Credentials & Secrets
 .env
 .env.*
+*.local
 !.env.example
+atlas-credentials.env
+atlas-credetntials.env
+mongodb_creds.txt
+*creds*.txt
+*credential*.env
+
+# Project Reports & Internal Documentation
+PROJECT_REPORT.md
 
 # Production Build Outputs
 dist/
@@ -51,5 +61,3 @@ coverage/
 .cache/
 .temp/
 .tmp/
-
-atlas-credetntials.env
