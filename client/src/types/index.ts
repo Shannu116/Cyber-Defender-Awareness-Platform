@@ -66,6 +66,47 @@ export interface PasswordItem {
   reason: string;
 }
 
+export interface QrInspectDifference {
+  id: string;
+  type: 'email' | 'subdomain' | 'qr_dest' | 'urgency' | 'form_id';
+  title: string;
+  officialValue: string;
+  rogueValue: string;
+  explanation: string;
+}
+
+export interface QrInspectDecoy {
+  id: string;
+  title: string;
+  value: string;
+  explanation: string;
+}
+
+export interface QrInspectFollowUp {
+  question: string;
+  options: Array<{
+    id: string;
+    text: string;
+    isCorrect: boolean;
+    explanation: string;
+  }>;
+}
+
+export interface QrInspectSubmission {
+  decision: 'scan_check' | 'ignore' | 'tear_down' | 'report_poster';
+  foundIds: string[];
+  foundCount: number;
+  falsePositiveCount: number;
+  hintsUsed: number;
+  scannedUrlInput?: string;
+  scannedUrlCorrect?: boolean;
+  revealedScan?: boolean;
+  followUpChoice: string | null;
+  isCorrect: boolean;
+  scoreAwarded: number;
+  bonusAwarded: number;
+}
+
 export interface QuestionDetails {
   email?: EmailData;
   hotspots?: Hotspot[];
@@ -94,11 +135,130 @@ export interface QuestionDetails {
   posterNotice?: string;
   qrPreviewUrl?: string;
   officialPortalUrl?: string;
+  differencesCount?: number;
+  qrDifferences?: QrInspectDifference[];
+  qrDecoys?: QrInspectDecoy[];
+  qrFollowUp?: QrInspectFollowUp;
   location?: string;
   availableNetworks?: Array<{ name: string; security: string }>;
   vectors?: string[];
   tone?: string;
   context?: string;
+  incidentScenarios?: IncidentScenario[];
+  incidentActions?: IncidentContainmentAction[];
+  storyDetails?: IncidentStoryDetails;
+}
+
+export interface StoryCard {
+  id: string;
+  text: string;
+  icon?: string;
+}
+
+export interface StopLeakAction {
+  id: string;
+  label: string;
+  icon: string;
+  effect: 'stops_leak' | 'slows_leak' | 'stops_with_penalty' | 'no_effect' | 'fills_meter';
+  isBest: boolean;
+  points: number;
+  penalty?: number;
+  comparison: string;
+}
+
+export interface ReportBlankOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+  hint?: string;
+}
+
+export interface SafeDeviceOption {
+  id: string;
+  label: string;
+  sublabel: string;
+  isSafe: boolean;
+  echoComparison: string;
+}
+
+export interface IncidentChecklistItem {
+  id: string;
+  text: string;
+}
+
+export interface IncidentStoryDetails {
+  walletCards?: StoryCard[];
+  walletLesson?: string;
+  leakActions?: StopLeakAction[];
+  reportBlanks?: {
+    time: ReportBlankOption[];
+    sender: ReportBlankOption[];
+    subject: ReportBlankOption[];
+    passwordTyped: ReportBlankOption[];
+    laptopState: ReportBlankOption[];
+  };
+  devices?: SafeDeviceOption[];
+  checklist?: IncidentChecklistItem[];
+}
+
+export interface IncidentScenarioClue {
+  id: string;
+  item: 'browser' | 'downloads' | 'taskbar' | 'chat';
+  title: string;
+  preview: string;
+  detail: string;
+  iocs: string[];
+}
+
+export interface IncidentScenario {
+  id: string;
+  type: 'credential_harvest' | 'malicious_download' | 'mfa_prompt_flood';
+  title: string;
+  threatType: string;
+  clickTime: string;
+  sender: string;
+  subject: string;
+  suspiciousUrl: string;
+  credentialsEntered: string;
+  screenSummary: string;
+  recommendedAction: string;
+  clues: IncidentScenarioClue[];
+  distractorChips: string[];
+}
+
+export interface IncidentContainmentAction {
+  id: string;
+  label: string;
+  haltsStage: boolean;
+  slowsStage: boolean;
+  evidenceDelta: number;
+  feedback: string;
+  isRecommended: boolean;
+}
+
+export interface IncidentToolboxSubmission {
+  scene1Completed?: boolean;
+  leakActionChosen?: string;
+  meterStopped?: boolean;
+  troubleMeterPercent?: number;
+  reportSent?: boolean;
+  reportChoices?: Record<string, string>;
+  safeDeviceChosen?: string;
+  checklistCompleted?: string[];
+  isCorrect: boolean;
+  scoreAwarded: number;
+  bonusAwarded: number;
+  scenarioId?: string;
+  scenarioType?: string;
+  stagesReached?: number;
+  containmentAction?: string;
+  evidencePreservedPercent?: number;
+  reportedFields?: Record<string, string>;
+  reportAccuracyPercent?: number;
+  socFollowUpCorrect?: boolean;
+  recoveryStepsTaken?: string[];
+  attemptedCompromisedReset?: boolean;
+  timeline?: Array<{ timestamp: string; event: string; status: 'info' | 'warning' | 'danger' | 'success' }>;
 }
 
 export interface Question {

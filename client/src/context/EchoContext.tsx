@@ -60,6 +60,7 @@ interface EchoContextType {
   // Threat/Neutral explain (called by challenges)
   explainThreat: (finding: Omit<EchoExplanation, 'type'>) => void;
   explainNeutral: (message: string, title?: string) => void;
+  postEchoMessage: (text: string, title?: string, openDrawer?: boolean) => void;
   // Legacy (kept for backward compat with existing challenge components)
   activeFinding: EchoExplanation | null;
   history: EchoExplanation[];
@@ -190,6 +191,17 @@ export const EchoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUnreadCount(0);
   }, [push]);
 
+  const postEchoMessage = useCallback((text: string, title?: string, openDrawer: boolean = false) => {
+    const formatted = title ? `👻 **${title}**\n\n${text}` : text;
+    push(formatted);
+    if (openDrawer) {
+      setIsOpen(true);
+      setUnreadCount(0);
+    } else {
+      setUnreadCount(prev => prev + 1);
+    }
+  }, [push]);
+
   // ── Send user message + hint engine ──────────────────────────────────────────
   const sendUserMessage = useCallback((text: string) => {
     pushUser(text);
@@ -251,7 +263,7 @@ export const EchoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isOpen, openEcho, closeEcho, toggleEcho,
       messages, unreadCount, isEchoTyping, sendUserMessage,
       checklist, foundIds, registerChecklist, clearChecklist,
-      explainThreat, explainNeutral,
+      explainThreat, explainNeutral, postEchoMessage,
       activeFinding, history, selectHistoryItem, clearEchoHistory,
     }}>
       {children}

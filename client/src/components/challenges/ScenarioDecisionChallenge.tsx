@@ -94,12 +94,12 @@ export const ScenarioDecisionChallenge: React.FC<ScenarioDecisionChallengeProps>
               <span className="text-[10px] text-amber-400 font-mono">Unsecured</span>
             </div>
 
-            <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 flex items-center justify-between text-xs">
+            <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-cyan-400" />
-                <span className="font-bold text-cyan-200">Corporate Cellular Mobile Hotspot / VPN</span>
+                <Wifi className="w-4 h-4 text-slate-400" />
+                <span className="font-semibold text-slate-200">Corporate Mobile Hotspot</span>
               </div>
-              <span className="text-[10px] text-cyan-400 font-mono font-bold">WPA3 Encrypted</span>
+              <span className="text-[10px] text-slate-400 font-mono">Secured</span>
             </div>
           </div>
         </div>

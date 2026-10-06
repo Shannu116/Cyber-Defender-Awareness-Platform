@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Question } from '../../types';
 import { 
   Smartphone, 
-  Search, 
   ExternalLink, 
   Trash2, 
-  Flag, 
-  Package, 
   ShieldAlert, 
   ShieldCheck, 
   AlertTriangle, 
   CheckCircle2, 
-  Info, 
   UserX,
   CreditCard,
-  RotateCcw
+  RotateCcw,
+  X,
+  Building2,
+  Plane,
+  Package,
+  MessageSquare,
+  ChevronRight
 } from 'lucide-react';
 import { sounds } from '../../utils/sound';
 import { useEcho } from '../../context/EchoContext';
@@ -25,22 +27,84 @@ interface MessageInvestigateChallengeProps {
   onSubmitAnswer: (response: any) => void;
 }
 
+interface ThreadItem {
+  id: string;
+  senderName: string;
+  senderAddress: string;
+  isRogue: boolean;
+  preview: string;
+  time: string;
+  unread: boolean;
+}
+
+const INBOX_THREADS: ThreadItem[] = [
+  {
+    id: 'thread-hdfc',
+    senderName: 'HDFC Bank',
+    senderAddress: 'VM-HDFCBK',
+    isRogue: false,
+    preview: 'INR 4,500.00 debited from A/c XX4120 on 12-Oct...',
+    time: '8:45 AM',
+    unread: false
+  },
+  {
+    id: 'thread-courier',
+    senderName: 'Delivery Notification',
+    senderAddress: '+91 98765 43210',
+    isRogue: true,
+    preview: 'Your package is pending customs clearance. Pay a small...',
+    time: '9:38 AM',
+    unread: true
+  },
+  {
+    id: 'thread-indigo',
+    senderName: 'IndiGo Airlines',
+    senderAddress: 'AX-INDIGO',
+    isRogue: false,
+    preview: 'Flight 6E 402 to DEL is on schedule. Web check-in open...',
+    time: 'Yesterday',
+    unread: false
+  }
+];
+
 export const MessageInvestigateChallenge: React.FC<MessageInvestigateChallengeProps> = ({
   question,
   submitted,
   onSubmitAnswer,
 }) => {
-  const { explainThreat, explainNeutral } = useEcho();
+  const { explainThreat, explainNeutral, registerChecklist, clearChecklist } = useEcho();
+  const [activeThreadId, setActiveThreadId] = useState<string>('thread-courier');
   const [foundIds, setFoundIds] = useState<string[]>([]);
   const [chosenAction, setChosenAction] = useState<string | null>(null);
+  const [showPhishedWarning, setShowPhishedWarning] = useState(false);
 
-  const totalSuspiciousCount = 3;
+  const totalSuspiciousCount = 2; // 2 main clues per changes.md
+
+  // Register Echo checklist on mount
+  useEffect(() => {
+    registerChecklist([
+      {
+        id: 'suspicious_sender',
+        label: 'Sender phone number header',
+        hint: 'Compare the sender identity of the delivery alert with the bank and airline texts in your inbox. Notice anything strange about who sent it?',
+        severity: 'high',
+      },
+      {
+        id: 'suspicious_fee',
+        label: 'Micro-payment clearance hook',
+        hint: 'Read the message body carefully. Why is an unexpected small fee required to release a normal package?',
+        severity: 'critical',
+      },
+    ]);
+    return () => clearChecklist();
+  }, [registerChecklist, clearChecklist]);
 
   const handleClearSelection = () => {
     if (submitted) return;
     sounds.playClick();
     setFoundIds([]);
     setChosenAction(null);
+    setShowPhishedWarning(false);
   };
 
   const handleElementClick = (elementId: string, isSuspicious: boolean, neutralHint?: string) => {
@@ -58,50 +122,49 @@ export const MessageInvestigateChallenge: React.FC<MessageInvestigateChallengePr
         explainThreat({
           id: 'suspicious_sender',
           title: 'Personal 10-Digit Mobile Number (+91 98765 43210)',
-          subtitle: 'Unauthorized Courier Sender Identity',
+          subtitle: 'Odd One Out: Rogue Sender vs Alphanumeric Headers',
           severity: 'high',
-          explanation: 'Legitimate courier companies (e.g., India Post, BlueDart, DHL) communicate using verified alphanumeric enterprise sender IDs (e.g. VK-BLUEDART), never personal mobile SIM cards.',
-          attackerObjective: 'To impersonate logistics services cheaply using untraceable prepaid SIM cards.',
-          proTip: 'Never trust delivery notifications arriving from personal 10-digit mobile numbers.'
+          explanation: 'The authentic messages in your inbox (VM-HDFCBK and AX-INDIGO) use registered enterprise alphanumeric sender headers. This fraudulent parcel message arrives from an untraceable 10-digit prepaid mobile number (+91 98765 43210).',
+          attackerObjective: 'To impersonate reputable logistics couriers cheaply using disposable SIM cards.',
+          proTip: 'Official courier agencies (India Post, BlueDart, DHL) communicate using enterprise headers, never random 10-digit phone numbers.'
         });
       } else if (elementId === 'suspicious_fee') {
         explainThreat({
           id: 'suspicious_fee',
-          title: 'Arbitrary Redelivery Fee Demand (₹25)',
-          subtitle: 'Micro-Payment Phishing Pretext',
-          severity: 'high',
-          explanation: 'Legitimate couriers do not require payment of small arbitrary "redelivery fees" over SMS to complete a delivery. Attackers use nominal amounts so victims won\'t hesitate, allowing the fake portal to steal card credentials.',
-          attackerObjective: 'To steal credit/debit card numbers, expiration dates, CVVs, and banking OTPs.',
-          proTip: 'Courier services never withhold parcels for ₹20-50 online credit card payments.'
-        });
-      } else if (elementId === 'suspicious_link') {
-        explainThreat({
-          id: 'suspicious_link',
-          title: 'Counterfeit Tracking Portal Link',
-          subtitle: 'Rogue Domain: delivery-support.example/reschedule',
+          title: 'Micro-Payment Rescheduling Hook (₹25)',
+          subtitle: 'Customs Clearance Pretext',
           severity: 'critical',
-          explanation: 'The domain "delivery-support.example" is a fraudulent site, not an official courier tracking portal. Entering info here sends your credentials directly to cyber criminals.',
-          attackerObjective: 'To harvest banking details and install unauthorized mobile profile payloads.',
-          proTip: 'Always track packages directly through the merchant\'s app or official website bookmark.'
+          explanation: 'Legitimate parcel couriers never withhold shipments over small arbitrary fees demanded via SMS links. Attackers request nominal sums like ₹25 so victims pay without second thought, allowing rogue portals to skim credit card details.',
+          attackerObjective: 'To steal credit card credentials, expiration dates, CVVs, and banking OTPs.',
+          proTip: 'Never make credit card payments via SMS links to release undelivered parcels.'
         });
       }
     } else {
       sounds.playClick();
       explainNeutral(
-        neutralHint || 'This part appears standard. Keep examining the sender number and links for deceptive cues.',
-        'Authentic SMS Element'
+        neutralHint || 'This is standard automated business messaging. Focus on comparing sender formats and checking for payment traps.',
+        'Legitimate Notification'
       );
     }
   };
 
-  const handleAction = (actionKey: 'report' | 'delete' | 'pay' | 'reply') => {
+  const handleLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (submitted) return;
+    sounds.playWarning();
+    setShowPhishedWarning(true);
+  };
+
+  const handleAction = (actionKey: 'delete_block' | 'pay_fee' | 'reply') => {
     if (submitted) return;
     sounds.playClick();
     setChosenAction(actionKey);
 
-    const isCorrect = actionKey === 'report' || (actionKey === 'delete' && foundIds.length >= 2);
+    const isCorrect = actionKey === 'delete_block' && foundIds.length >= 1;
     const scoreAwarded = isCorrect
       ? Math.round(50 + (foundIds.length / totalSuspiciousCount) * 50)
+      : actionKey === 'delete_block'
+      ? 50
       : 0;
     const bonusAwarded = isCorrect && foundIds.length === totalSuspiciousCount ? (question.bonusPoints || 20) : 0;
 
@@ -117,11 +180,10 @@ export const MessageInvestigateChallenge: React.FC<MessageInvestigateChallengePr
 
   const isSenderFound = foundIds.includes('suspicious_sender');
   const isFeeFound = foundIds.includes('suspicious_fee');
-  const isLinkFound = foundIds.includes('suspicious_link');
 
   return (
     <div className="space-y-6">
-      {/* Top Scenario & Investigation Objective */}
+      {/* Top Objective Guidance Banner */}
       <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between gap-4 shadow-md flex-wrap">
         <div className="flex items-start gap-3">
           <Smartphone className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
@@ -130,7 +192,7 @@ export const MessageInvestigateChallenge: React.FC<MessageInvestigateChallengePr
               Below is an SMS received on your smartphone. Find the suspicious elements within it.
             </h3>
             <p className="text-xs text-slate-300 mt-0.5">
-              Tap directly on the phone number, text lines, or links to uncover indicators of fraud.
+              Review your message inbox using the "Odd One Out" clue: compare authentic business texts against the rogue parcel alert. (Find both clues to pass)
             </p>
           </div>
         </div>
@@ -163,152 +225,279 @@ export const MessageInvestigateChallenge: React.FC<MessageInvestigateChallengePr
         </div>
       </div>
 
-      {/* Realistic Smartphone Screen */}
-      <div className="max-w-md mx-auto rounded-[36px] bg-slate-950 border-[6px] border-slate-800 p-5 shadow-2xl relative overflow-hidden">
+      {/* Main Container: Mobile Phone Mockup */}
+      <div className="max-w-md mx-auto rounded-[40px] bg-slate-950 border-[6px] border-slate-800 p-5 shadow-2xl relative overflow-hidden">
         {/* Device Notch & Status Bar */}
         <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-3 pb-3 border-b border-slate-900">
           <span>9:41 AM</span>
           <div className="w-20 h-4 bg-slate-900 rounded-full flex items-center justify-center">
             <div className="w-3 h-3 rounded-full bg-slate-800" />
           </div>
-          <span className="flex items-center gap-1">5G 📶 100%</span>
+          <span className="flex items-center gap-1 font-semibold text-slate-300">5G 📶 100%</span>
         </div>
 
-        {/* Messaging App Top Bar (Plain text appearance, NO inspect buttons) */}
-        <div className="py-3 flex items-center justify-between border-b border-slate-800/80 mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-white text-xs">
-              <Package className="w-4 h-4 text-slate-300" />
-            </div>
-            <div>
-              <div 
-                onClick={() => handleElementClick('title', false, 'The title claims to be a courier service, but check the actual phone number.')}
-                className="text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>Express Courier Alert</span>
-                <span className="text-[10px] px-1.5 rounded bg-slate-800 text-slate-400">SMS</span>
-              </div>
-
-              {/* SENDER NUMBER: Completely uniform, NO hover color giveaway */}
-              <div
-                onClick={() => handleElementClick('suspicious_sender', true)}
-                className={`text-[11px] font-mono cursor-pointer rounded px-1 py-0.2 transition-colors ${
-                  isSenderFound
-                    ? 'bg-rose-950 text-rose-300 border border-rose-500/60 font-bold'
-                    : 'text-slate-400'
-                }`}
-              >
-                +91 98765 43210
-              </div>
-            </div>
+        {/* Odd One Out Inbox Selector Tabs */}
+        <div className="py-2.5 px-1 border-b border-slate-800/80 mb-3">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+            <span>Recent Messages (Compare Senders)</span>
+            <span className="text-cyan-400 font-semibold">"Odd One Out" Metaphor</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {INBOX_THREADS.map(thread => {
+              const isActive = activeThreadId === thread.id;
+              return (
+                <button
+                  key={thread.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveThreadId(thread.id);
+                    if (!thread.isRogue) {
+                      handleElementClick(
+                        thread.id,
+                        false,
+                        `Authentic automated business message from registered enterprise header "${thread.senderAddress}". Notice it does not use a 10-digit personal SIM number!`
+                      );
+                    }
+                  }}
+                  className={`p-1.5 rounded-xl text-left border transition-all ${
+                    isActive
+                      ? 'bg-slate-800 border-cyan-500/60 shadow-sm'
+                      : 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-800/50 text-slate-400'
+                  }`}
+                >
+                  <div className="flex items-center gap-1 mb-0.5">
+                    {thread.id === 'thread-hdfc' && <Building2 className="w-3 h-3 text-cyan-400 shrink-0" />}
+                    {thread.id === 'thread-courier' && <Package className="w-3 h-3 text-amber-400 shrink-0" />}
+                    {thread.id === 'thread-indigo' && <Plane className="w-3 h-3 text-cyan-400 shrink-0" />}
+                    <span className="text-[10px] font-bold text-white truncate">{thread.senderName}</span>
+                  </div>
+                  <div className="text-[9px] font-mono text-slate-400 truncate">
+                    {thread.senderAddress}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* SMS Bubble (Plain text, NO hover color giveaways) */}
-        <div className="space-y-2 mb-4">
-          <div className="text-center text-[10px] font-mono text-slate-500">Today • 9:38 AM</div>
-
-          <div className="rounded-2xl rounded-tl-sm bg-slate-900 border border-slate-800 p-4 text-xs text-slate-200 space-y-3 shadow-lg cursor-pointer select-none">
-            <div 
-              onClick={() => handleElementClick('bubble_heading', false, 'Generic package alert heading used to capture attention.')}
-              className="flex items-center gap-2 font-bold text-white text-sm"
-            >
-              <span>📦</span>
-              <span>Delivery Alert</span>
-            </div>
-
-            <p 
-              onClick={() => handleElementClick('bubble_body', false, 'A common pretext claiming an incomplete address to justify rescheduling.')}
-              className="leading-relaxed text-slate-300"
-            >
-              Your package could not be delivered to your registered address due to an incomplete street number.
-            </p>
-
-            {/* FEE DEMAND PHRASE: Looks identical to surrounding text, NO hover giveaway */}
-            <p
-              onClick={() => handleElementClick('suspicious_fee', true)}
-              className={`leading-relaxed rounded px-1.5 py-1 transition-colors ${
-                isFeeFound
-                  ? 'bg-amber-950/80 text-amber-300 border border-amber-500/60 font-semibold'
-                  : 'text-slate-300'
-              }`}
-            >
-              A delivery fee of ₹25 is required to reschedule your delivery.
-            </p>
-
-            {/* LINK: Standard link appearance, NO special hover glow */}
-            <div className="pt-1">
-              <div
-                onClick={() => handleElementClick('suspicious_link', true)}
-                className={`p-2.5 rounded-xl cursor-pointer transition-colors ${
-                  isLinkFound
-                    ? 'bg-rose-950/80 border-2 border-rose-500 text-rose-200'
-                    : 'bg-slate-950 border border-slate-800 text-cyan-400'
-                }`}
-              >
-                <div className="font-bold flex items-center gap-1.5 text-xs">
-                  <span>Track / Reschedule Package</span>
-                  <ExternalLink className="w-3 h-3" />
+        {/* Active Message View */}
+        {activeThreadId === 'thread-courier' ? (
+          <div>
+            {/* Courier Chat Top Bar */}
+            <div className="py-2.5 flex items-center justify-between border-b border-slate-800/80 mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center font-bold text-white text-xs">
+                  <Package className="w-4 h-4 text-amber-300" />
                 </div>
-                <div className="text-[10px] font-mono text-slate-400 mt-0.5">
-                  delivery-support.example/reschedule?pkg=9821
+                <div>
+                  <div 
+                    onClick={() => handleElementClick('title', false, 'The contact name says "Express Courier Alert", but look below at the actual phone number.')}
+                    className="text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Express Courier Alert</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">SMS</span>
+                  </div>
+
+                  {/* SENDER NUMBER (Dead Giveaway hotspot): Tapping triggers discovery */}
+                  <div
+                    onClick={() => handleElementClick('suspicious_sender', true)}
+                    className={`text-[11px] font-mono cursor-pointer rounded px-1.5 py-0.5 transition-colors inline-block ${
+                      isSenderFound
+                        ? 'bg-rose-950 text-rose-300 border border-rose-500/60 font-bold'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title="Tap to inspect sender identity"
+                  >
+                    +91 98765 43210
+                  </div>
                 </div>
               </div>
+
+              <span className="text-[10px] font-mono text-slate-500">Today 9:38 AM</span>
+            </div>
+
+            {/* Courier SMS Bubble */}
+            <div className="space-y-3 mb-4">
+              <div className="rounded-2xl rounded-tl-sm bg-slate-900 border border-slate-800 p-4 text-xs text-slate-200 space-y-3 shadow-lg select-none">
+                <div 
+                  onClick={() => handleElementClick('bubble_heading', false, 'Package alert subject header designed to create urgency.')}
+                  className="flex items-center gap-2 font-bold text-white text-xs cursor-pointer"
+                >
+                  <Package className="w-4 h-4 text-amber-400" />
+                  <span>Parcel Status: Pending Customs</span>
+                </div>
+
+                {/* Micro-payment Hook hotspot */}
+                <p
+                  onClick={() => handleElementClick('suspicious_fee', true)}
+                  className={`leading-relaxed rounded p-2 transition-colors cursor-pointer ${
+                    isFeeFound
+                      ? 'bg-amber-950/80 text-amber-300 border border-amber-500/60 font-semibold'
+                      : 'text-slate-200 hover:bg-slate-800/40'
+                  }`}
+                  title="Tap to inspect this requirement"
+                >
+                  Your package is pending customs clearance. Pay a small delivery rescheduling fee of ₹25 to release it.
+                </p>
+
+                {/* Destination Link */}
+                <div className="pt-1">
+                  <div
+                    onClick={handleLinkClick}
+                    className="p-2.5 rounded-xl cursor-pointer bg-slate-950 border border-slate-800 hover:border-slate-700 text-cyan-400 transition-colors"
+                  >
+                    <div className="font-bold flex items-center justify-between text-xs">
+                      <span>delivery-support.example/reschedule</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                      Tracking ID: #IN-8921-PKG
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Response Decision Toolbar */}
+            <div className="space-y-2 pt-2 border-t border-slate-900">
+              <div className="text-[11px] font-mono text-slate-400 font-bold uppercase mb-1">
+                Decide your response:
+              </div>
+
+              <div className="grid grid-cols-1 gap-2">
+                <button
+                  type="button"
+                  disabled={submitted}
+                  onClick={() => handleAction('delete_block')}
+                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    chosenAction === 'delete_block'
+                      ? 'bg-slate-800 text-white border-2 border-cyan-400 shadow-md'
+                      : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Delete & Block Number</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={submitted}
+                  onClick={() => handleAction('pay_fee')}
+                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    chosenAction === 'pay_fee'
+                      ? 'bg-slate-800 text-white border-2 border-cyan-400 shadow-md'
+                      : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Pay ₹25 fee via link</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={submitted}
+                  onClick={() => handleAction('reply')}
+                  className={`w-full py-2.5 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    chosenAction === 'reply'
+                      ? 'bg-slate-800 text-white border-2 border-cyan-400 shadow-md'
+                      : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Reply to Message</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          /* Legitimate Thread Preview (HDFC Bank or IndiGo) */
+          <div className="space-y-3 py-2">
+            <div className="py-2.5 flex items-center justify-between border-b border-slate-800/80 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-white">
+                  {activeThreadId === 'thread-hdfc' ? 'HB' : '6E'}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white">
+                    {activeThreadId === 'thread-hdfc' ? 'HDFC Bank' : 'IndiGo Airlines'}
+                  </div>
+                  <div className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                    <span>Official Header: {activeThreadId === 'thread-hdfc' ? 'VM-HDFCBK' : 'AX-INDIGO'}</span>
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono text-slate-500">Verified Entity</span>
+            </div>
 
-        {/* Action Controls */}
-        <div className="space-y-2 pt-2 border-t border-slate-900">
-          <div className="text-[11px] font-mono text-slate-400 font-bold uppercase mb-1">
-            Decide your response:
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 space-y-2">
+              {activeThreadId === 'thread-hdfc' ? (
+                <p className="leading-relaxed">
+                  INR 4,500.00 debited from A/c XX4120 on 12-Oct-26. Info: UPI/3291048123/MERCHANT. If this wasn't you, call 1800-202-6161.
+                </p>
+              ) : (
+                <p className="leading-relaxed">
+                  Flight 6E 402 to DEL is on schedule for departure at 17:30. Web check-in is open at goindigo.in. Please arrive 2 hours prior.
+                </p>
+              )}
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+              <span>This is an authentic business message.</span>
+              <button
+                type="button"
+                onClick={() => setActiveThreadId('thread-courier')}
+                className="text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1"
+              >
+                <span>Check Parcel Alert</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              disabled={submitted}
-              onClick={() => handleAction('report')}
-              className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                chosenAction === 'report'
-                  ? 'bg-slate-800 text-white border-2 border-cyan-400'
-                  : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <Flag className="w-3.5 h-3.5 text-slate-400" />
-              <span>Report & Block</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={submitted}
-              onClick={() => handleAction('delete')}
-              className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                chosenAction === 'delete'
-                  ? 'bg-slate-800 text-white border-2 border-cyan-400'
-                  : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <Trash2 className="w-3.5 h-3.5 text-slate-400" />
-              <span>Delete SMS</span>
-            </button>
-          </div>
-
-          <button
-            type="button"
-            disabled={submitted}
-            onClick={() => handleAction('pay')}
-            className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-              chosenAction === 'pay'
-                ? 'bg-slate-800 text-white border-2 border-cyan-400'
-                : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <CreditCard className="w-3.5 h-3.5 text-slate-400" />
-            <span>Pay ₹25 fee via link</span>
-          </button>
-        </div>
+        )}
       </div>
+
+      {/* Simulated Phished Warning Modal if user clicks tracking link */}
+      {showPhishedWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="max-w-md w-full bg-slate-900 border border-rose-500/60 rounded-3xl p-6 shadow-2xl relative space-y-4">
+            <button
+              type="button"
+              onClick={() => setShowPhishedWarning(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
+              <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-rose-300">Smishing Link Simulation</h3>
+                <p className="text-xs text-slate-400">Untrusted tracking portal link tapped</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/30 text-xs text-slate-300 space-y-2 leading-relaxed">
+              <p className="font-semibold text-rose-200">
+                ⚠️ In a real attack, visiting <strong className="font-mono text-rose-300">delivery-support.example/reschedule</strong> opens a fake card payment form designed to skim your credit card credentials.
+              </p>
+              <p className="text-slate-400">
+                Legitimate logistics agencies never ask for nominal fees over random SMS links. Always track packages directly on the official merchant app.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowPhishedWarning(false)}
+              className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition-colors"
+            >
+              Back to Message & Delete/Block
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

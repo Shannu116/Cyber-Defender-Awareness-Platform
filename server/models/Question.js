@@ -41,7 +41,14 @@ const QuestionSchema = new mongoose.Schema({
       'drag_drop',
       'scenario_decision',
       'qr_inspect',
-      'multiple_choice'
+      'multiple_choice',
+      'message_investigate',
+      'laptop_security',
+      'incident_toolbox',
+      'workday_timeline',
+      'email_investigation',
+      'office_incident',
+      'password_challenge'
     ]
   },
   scenario: { type: String, required: true },

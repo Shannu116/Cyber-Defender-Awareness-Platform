@@ -22,6 +22,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLogin } from './components/AdminLogin';
 import { EchoProvider } from './context/EchoContext';
 import { EchoTutorTab } from './components/EchoTutorTab';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { isAdminAuthenticated, clearAdminToken, verifyAdminSession } from './services/api';
 import { useSession } from './hooks/useSession';
 import { sounds } from './utils/sound';
@@ -643,105 +644,107 @@ export function App() {
               </p>
             </div>
 
-            {/* Challenge 1: The Email Investigation (NEW REALISTIC SIMULATION) */}
-            {(currentQ.questionType === 'hotspot' || currentQ.questionType === 'email_investigation' || currentQ.id === 'ch-1') && (
-              <SpotPhishChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+            <ErrorBoundary fallbackTitle="Challenge Display Error" resetKey={currentQ.id}>
+              {/* Challenge 1: The Email Investigation (NEW REALISTIC SIMULATION) */}
+              {(currentQ.questionType === 'hotspot' || currentQ.questionType === 'email_investigation' || currentQ.id === 'ch-1') && (
+                <SpotPhishChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Challenge 2: Investigate the Message (NEW) */}
-            {(currentQ.questionType === 'message_investigate' || currentQ.id === 'ch-2') && (
-              <MessageInvestigateChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Challenge 2: Investigate the Message (NEW) */}
+              {(currentQ.questionType === 'message_investigate' || currentQ.id === 'ch-2') && (
+                <MessageInvestigateChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Challenge 3: Verify the Boss (NEW) */}
-            {(currentQ.questionType === 'chat_decision' || currentQ.id === 'ch-3') && (
-              <VerifyBossChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Challenge 3: Verify the Boss (NEW) */}
+              {(currentQ.questionType === 'chat_decision' || currentQ.id === 'ch-3') && (
+                <VerifyBossChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Challenge 4: MFA Notification Storm (NEW) */}
-            {(currentQ.questionType === 'mfa_alert' || currentQ.id === 'ch-4') && (
-              <MfaStormChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Challenge 4: MFA Notification Storm (NEW) */}
+              {(currentQ.questionType === 'mfa_alert' || currentQ.id === 'ch-4') && (
+                <MfaStormChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Challenge 5: Password Challenge */}
-            {(currentQ.questionType === 'drag_drop' || currentQ.questionType === 'password_challenge' || currentQ.id === 'ch-5') && (
-              <PasswordChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Challenge 5: Password Challenge */}
+              {(currentQ.questionType === 'drag_drop' || currentQ.questionType === 'password_challenge' || currentQ.id === 'ch-5') && (
+                <PasswordChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Challenge 6: The Office Incident (NEW PHYSICAL SECURITY MINI-GAME) */}
-            {(currentQ.questionType === 'office_incident' || currentQ.questionType === 'scenario_decision' || currentQ.id === 'ch-6') && (
-              <OfficeIncidentChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Challenge 6: The Office Incident (NEW PHYSICAL SECURITY MINI-GAME) */}
+              {(currentQ.questionType === 'office_incident' || currentQ.questionType === 'scenario_decision' || currentQ.id === 'ch-6') && (
+                <OfficeIncidentChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Challenge 7: Inspect Before You Scan (NEW) */}
-            {(currentQ.questionType === 'qr_inspect' || currentQ.id === 'ch-7') && (
-              <QrInspectChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Challenge 7: Inspect Before You Scan (NEW) */}
+              {(currentQ.questionType === 'qr_inspect' || currentQ.id === 'ch-7') && (
+                <QrInspectChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Challenge 8: Secure the Laptop (NEW) */}
-            {(currentQ.questionType === 'laptop_security' || currentQ.id === 'ch-8') && (
-              <LaptopSecurityChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Challenge 8: Secure the Laptop (NEW) */}
+              {(currentQ.questionType === 'laptop_security' || currentQ.id === 'ch-8') && (
+                <LaptopSecurityChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Challenge 9: You Clicked It (NEW) */}
-            {(currentQ.questionType === 'incident_toolbox' || currentQ.id === 'ch-9') && (
-              <IncidentToolboxChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Challenge 9: You Clicked It (NEW) */}
+              {(currentQ.questionType === 'incident_toolbox' || currentQ.id === 'ch-9') && (
+                <IncidentToolboxChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Challenge 10: A Day at Work (NEW) */}
-            {(currentQ.questionType === 'workday_timeline' || currentQ.id === 'ch-10') && (
-              <WorkdayTimelineChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Challenge 10: A Day at Work (NEW) */}
+              {(currentQ.questionType === 'workday_timeline' || currentQ.id === 'ch-10') && (
+                <WorkdayTimelineChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
 
-            {/* Fallback to ScenarioDecisionChallenge for any unmatched question */}
-            {!['ch-1', 'ch-2', 'ch-3', 'ch-4', 'ch-5', 'ch-6', 'ch-7', 'ch-8', 'ch-9', 'ch-10'].includes(currentQ.id) && 
-             !['hotspot', 'email_investigation', 'message_investigate', 'chat_decision', 'mfa_alert', 'drag_drop', 'password_challenge', 'office_incident', 'qr_inspect', 'laptop_security', 'incident_toolbox', 'workday_timeline'].includes(currentQ.questionType) && (
-              <ScenarioDecisionChallenge
-                question={currentQ}
-                submitted={isCurrentSubmitted}
-                onSubmitAnswer={handleAnswerSubmit}
-              />
-            )}
+              {/* Fallback to ScenarioDecisionChallenge for any unmatched question */}
+              {!['ch-1', 'ch-2', 'ch-3', 'ch-4', 'ch-5', 'ch-6', 'ch-7', 'ch-8', 'ch-9', 'ch-10'].includes(currentQ.id) && 
+               !['hotspot', 'email_investigation', 'message_investigate', 'chat_decision', 'mfa_alert', 'drag_drop', 'password_challenge', 'office_incident', 'qr_inspect', 'laptop_security', 'incident_toolbox', 'workday_timeline'].includes(currentQ.questionType) && (
+                <ScenarioDecisionChallenge
+                  question={currentQ}
+                  submitted={isCurrentSubmitted}
+                  onSubmitAnswer={handleAnswerSubmit}
+                />
+              )}
+            </ErrorBoundary>
 
             {/* Feedback Panel (Appears after answer submission) */}
             {isCurrentSubmitted && currentEvaluation && (
